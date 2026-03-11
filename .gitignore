@@ -1,0 +1,22 @@
+# Ignore the raw FoodInsSeg dataset and images
+computer-vision-training/FoodInsSeg/
+*.jpg
+*.jpeg
+*.png
+*.json
+
+# Ignore generated YOLO labels
+labels/
+*.txt
+
+# Ignore YOLO training runs and heavy AI models
+runs/
+*.pt
+*.onnx
+*.hef
+
+# Ignore Python cache
+__pycache__/
+*.pyc
+venv/
+.env
