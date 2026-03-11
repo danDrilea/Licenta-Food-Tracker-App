@@ -25,7 +25,7 @@ def main():
         name="FoodInsSeg_DEMO_Run1" 
     )
     
-    print("✅ Training complete!")
+    print("Training complete!")
 
 if __name__ == "__main__":
     main()

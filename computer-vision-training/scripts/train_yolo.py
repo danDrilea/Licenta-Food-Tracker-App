@@ -1,8 +1,10 @@
-from ultralytics import YOLO
+from ultralytics import YOLO, settings
 import os
 
 # Automatically find the paths
 DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+settings.update({"datasets_dir": DIR})  # Set the datasets directory to the parent of the current script
+
 YAML_PATH = os.path.join(DIR, 'food.yaml')
 RUNS_DIR = os.path.join(DIR, 'runs')
 
@@ -23,7 +25,7 @@ def main():
         name="FoodInsSeg_Run1" 
     )
     
-    print("✅ Training complete!")
+    print("Training complete!")
 
 if __name__ == "__main__":
     main()
