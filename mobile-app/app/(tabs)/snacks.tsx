@@ -3,8 +3,9 @@ import { Text, View, StyleSheet } from 'react-native';
 export default function AboutScreen() {
   return (
     <View style={styles.container}>
-      <Text style={styles.text}>About screen</Text>
-      <Text style={styles.text}>Did you know eating food is kinda cool?</Text>
+      <Text style={styles.text}>Snacks screen</Text>
+      <Text style={styles.text}>Did you know eating snacks is kinda cool?</Text>
+      
     </View>
   );
 }
