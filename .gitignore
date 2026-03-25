@@ -1,13 +1,13 @@
 # Ignore the raw FoodInsSeg dataset and images
 computer-vision-training/FoodInsSeg/
-*.jpg
-*.jpeg
-*.png
-*.json
+computer-vision-training/**/*.jpg
+computer-vision-training/**/*.jpeg
+computer-vision-training/**/*.png
+computer-vision-training/**/*.json
 
 # Ignore generated YOLO labels
-labels/
-*.txt
+computer-vision-training/**/labels/
+computer-vision-training/**/*.txt
 
 # Ignore YOLO training runs and heavy AI models
 runs/
