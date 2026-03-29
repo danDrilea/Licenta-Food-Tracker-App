@@ -1,6 +1,6 @@
 import { Button } from "@react-navigation/elements";
-import { Text, View, StyleSheet } from "react-native";
 import { useState } from "react";
+import { StyleSheet, Text, View } from "react-native";
 
 export default function Index() {
   const [foodEaten,setFoodEaten] = useState(0);
@@ -11,14 +11,14 @@ export default function Index() {
       <Button
       color="#fff"
         style={styles.button}
-        onPressIn={() => setFoodEaten(foodEaten + 1)}
+        onPress={() => setFoodEaten(foodEaten + 1)}
       > Press here to eat food bro!</Button>
       <Text style={styles.text}> FOOD EATEN: {foodEaten} </Text>
 
       <Button
         color="#fff"
         style={styles.button}
-        onPressIn={() => setFoodEaten(0)}
+        onPress={() => setFoodEaten(0)}
       > RESET FOOD </Button>
     </View>
   );
@@ -36,11 +36,16 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
   button: {
-    backgroundColor: '#8800ff', // Tomato red color!
-    paddingVertical: 12,        // Space inside top and bottom
-    paddingHorizontal: 24,      // Space inside left and right
-    borderRadius: 8,            // Rounded corners
-    marginVertical: 10,         // Space outside top and bottom (separates the buttons)
+    backgroundColor: '#8800ff',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    marginVertical: 10,
+  },
+  imageBox: {
+    width: 300,
+    height: 300,
+    marginTop: 20,
+    borderRadius: 10,
   }
-
 });
