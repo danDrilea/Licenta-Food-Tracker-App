@@ -1,5 +1,6 @@
 from fastapi import FastAPI, File, UploadFile
 from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware # 1. Import CORS
 from ultralytics import YOLO
 import io
 from PIL import Image
@@ -7,6 +8,15 @@ import os
 import base64
 
 app = FastAPI(title="AI Food Tracker API")
+
+# 2. Add CORS Middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"], # Allows all origins
+    allow_credentials=True,
+    allow_methods=["*"], # Allows all methods (POST, GET, etc.)
+    allow_headers=["*"], # Allows all headers
+)
 
 # Define paths
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
