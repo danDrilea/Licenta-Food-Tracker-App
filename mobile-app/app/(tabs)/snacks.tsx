@@ -2,7 +2,7 @@ import { Button } from "@react-navigation/elements";
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { useState } from 'react';
-import { Alert, Image, StyleSheet, Text, View, ScrollView } from 'react-native';
+import { Alert, Image, StyleSheet, Text, View, ScrollView, Platform } from 'react-native';
 
 export default function AboutScreen() {
   // This state holds the image that comes BACK from the Pi
@@ -13,7 +13,7 @@ export default function AboutScreen() {
   const handleUpload = async () => {
     // 1. Pick the image
     let pickerResult = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: 'images', // Use literal string to bypass version-specific type issues
       allowsEditing: true,
       quality: 1,
     });
@@ -32,13 +32,22 @@ export default function AboutScreen() {
         { compress: 0.8, format: ImageManipulator.SaveFormat.JPEG }
       );
 
-      // 3. Package the image
+      // 3. Package the image correctly for both web and mobile
       let formData = new FormData();
-      formData.append('photo', {
-        uri: manipResult.uri,
-        name: 'photo.jpg',
-        type: 'image/jpeg',
-      } as any);
+      
+      if (Platform.OS === 'web') {
+        // Web requires a Blob object
+        const response = await fetch(manipResult.uri);
+        const blob = await response.blob();
+        formData.append('photo', blob, 'photo.jpg');
+      } else {
+        // Mobile uses the URI hack
+        formData.append('photo', {
+          uri: manipResult.uri,
+          name: 'photo.jpg',
+          type: 'image/jpeg',
+        } as any);
+      }
 
       // 4. Send to Pi
       let response = await fetch('http://danal.local:8000/analyze-food', {
