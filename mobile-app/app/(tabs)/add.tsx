@@ -1,10 +1,10 @@
 import { StyleSheet, Text, View } from 'react-native';
 
-export default function DashboardScreen() {
+export default function AddScreen() {
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Dashboard</Text>
-      <Text style={styles.text}>Calorii ramase si macronutrienti de azi</Text>
+      <Text style={styles.title}>Add Food</Text>
+      <Text style={styles.text}>Scan from photo, scan barcode, search aliment</Text>
     </View>
   );
 }
