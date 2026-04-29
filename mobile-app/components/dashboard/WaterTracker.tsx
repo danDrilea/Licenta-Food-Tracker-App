@@ -1,24 +1,23 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
 interface WaterTrackerProps {
-  initialGlasses?: number;
+  glasses: number;
   goal?: number;
+  onGlassesChange: (glasses: number) => void;
 }
 
 const WATER_COLOR = '#38bdf8';
 const WATER_COLOR_DIM = '#1e3a4d';
 
-export default function WaterTracker({ initialGlasses = 0, goal = 8 }: WaterTrackerProps) {
-  const [glasses, setGlasses] = useState(initialGlasses);
-
+export default function WaterTracker({ glasses, goal = 8, onGlassesChange }: WaterTrackerProps) {
   const handleTap = (index: number) => {
     // If tapping the last filled glass, unfill it (toggle behavior)
     if (index + 1 === glasses) {
-      setGlasses(index);
+      onGlassesChange(index);
     } else {
-      setGlasses(index + 1);
+      onGlassesChange(index + 1);
     }
   };
 

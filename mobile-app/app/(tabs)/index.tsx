@@ -6,6 +6,7 @@ import MealSummary from '../../components/dashboard/MealSummary';
 import StreakCounter from '../../components/dashboard/StreakCounter';
 import WeeklyChart from '../../components/dashboard/WeeklyChart';
 import { useSettings } from '../../contexts/SettingsContext';
+import { useDailyData } from '../../contexts/DailyDataContext';
 import type { DashboardMealData } from '../../components/dashboard/MealSummary';
 
 // ─── Mock data (will be replaced with real state/API later) ─────────
@@ -44,6 +45,7 @@ function getFormattedDate(): string {
 
 export default function DashboardScreen() {
   const { settings } = useSettings();
+  const dailyData = useDailyData();
 
   // Build meals from settings, overlaying mock calorie data
   const meals: DashboardMealData[] = settings.meals
@@ -102,7 +104,8 @@ export default function DashboardScreen() {
       {/* ─── 4. Water Intake ─── */}
       <View style={styles.card}>
         <WaterTracker
-          initialGlasses={MOCK.water.glasses}
+          glasses={dailyData.waterGlasses}
+          onGlassesChange={dailyData.setWaterGlasses}
           goal={settings.dailyGoals.waterGlasses}
         />
       </View>
