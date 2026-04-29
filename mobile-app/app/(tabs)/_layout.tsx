@@ -7,6 +7,7 @@ const MENU_OPTIONS = [
   { icon: 'camera' as const, label: 'Scan Photo' },
   { icon: 'barcode' as const, label: 'Scan Barcode' },
   { icon: 'search' as const, label: 'Search Food' },
+  { icon: 'scale-outline' as const, label: 'Log Weight' },
 ];
 
 const triangleImg = require('../../assets/images/cool-triangle.webp');
@@ -139,9 +140,10 @@ export default function TabLayout() {
 
 const styles = StyleSheet.create({
   addTabButton: {
-    flex: 1,
+    width: 70,
     alignItems: 'center',
     justifyContent: 'center',
+    alignSelf: 'center',
   },
   addButtonWrapper: {
     alignItems: 'center',
@@ -155,11 +157,11 @@ const styles = StyleSheet.create({
   },
   addIcon: {
     position: 'absolute',
-    top: 6,
+    top: 4,
   },
   triangleImage: {
-    width: 140,
-    height: 80,
+    width: 100,
+    height: 58,
     resizeMode: 'stretch',
     transform: [{ rotate: '180deg' }],
   },

@@ -16,10 +16,10 @@ const MOCK = {
   },
   water: { glasses: 5, goal: 8 },
   meals: [
-    { name: 'Breakfast', calories: 420, items: 3 },
-    { name: 'Lunch', calories: 650, items: 4 },
-    { name: 'Dinner', calories: 380, items: 2 },
-    { name: 'Snacks', calories: null, items: 0 },
+    { id: 'breakfast', name: 'Breakfast', calories: 420, items: 3 },
+    { id: 'lunch', name: 'Lunch', calories: 650, items: 4 },
+    { id: 'dinner', name: 'Dinner', calories: 380, items: 2 },
+    { id: 'snacks', name: 'Snacks', calories: null, items: 0 },
   ],
   streak: 7,
   weeklyCalories: [1950, 2100, 1800, 2250, 1450, 0, 0],
@@ -72,7 +72,13 @@ export default function DashboardScreen() {
 
       {/* ─── 3. Today's Meals ─── */}
       <View style={styles.section}>
-        <MealSummary meals={MOCK.meals} />
+        <MealSummary
+          meals={MOCK.meals}
+          onMealPress={(meal) => {
+            // TODO: navigate to journal tab with this meal focused
+            console.log(`Navigate to journal → ${meal.name} (id: ${meal.id})`);
+          }}
+        />
       </View>
 
       {/* ─── 4. Water Intake ─── */}

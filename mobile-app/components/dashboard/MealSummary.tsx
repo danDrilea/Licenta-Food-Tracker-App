@@ -1,38 +1,71 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Pressable } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
-interface MealData {
+export interface DashboardMealData {
+  id: string;
   name: string;
   calories: number | null;
   items: number;
+  icon?: keyof typeof Ionicons.glyphMap;
 }
 
 interface MealSummaryProps {
-  meals: MealData[];
+  meals: DashboardMealData[];
+  onMealPress?: (meal: DashboardMealData) => void;
 }
 
-const MEAL_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
+export const MAX_MEALS = 8;
+
+// Default icons for known meal names, fallback for custom ones
+const DEFAULT_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
   Breakfast: 'sunny-outline',
   Lunch: 'restaurant-outline',
   Dinner: 'moon-outline',
   Snacks: 'cafe-outline',
 };
 
-export default function MealSummary({ meals }: MealSummaryProps) {
+const CUSTOM_ICONS: (keyof typeof Ionicons.glyphMap)[] = [
+  'nutrition-outline',
+  'pizza-outline',
+  'ice-cream-outline',
+  'beer-outline',
+];
+
+function getMealIcon(meal: DashboardMealData, index: number): keyof typeof Ionicons.glyphMap {
+  if (meal.icon) return meal.icon;
+  if (DEFAULT_ICONS[meal.name]) return DEFAULT_ICONS[meal.name];
+  return CUSTOM_ICONS[index % CUSTOM_ICONS.length] || 'fast-food-outline';
+}
+
+export default function MealSummary({ meals, onMealPress }: MealSummaryProps) {
+  // Enforce max meals
+  const displayMeals = meals.slice(0, MAX_MEALS);
+
   return (
     <View style={styles.container}>
-      <Text style={styles.sectionTitle}>Today's Meals</Text>
+      <View style={styles.header}>
+        <Text style={styles.sectionTitle}>Today's Meals</Text>
+        <Text style={styles.mealCount}>{displayMeals.length} meals</Text>
+      </View>
 
       <View style={styles.grid}>
-        {meals.map((meal) => {
+        {displayMeals.map((meal, index) => {
           const isLogged = meal.calories !== null && meal.items > 0;
-          const icon = MEAL_ICONS[meal.name] || 'fast-food-outline';
+          const icon = getMealIcon(meal, index);
 
           return (
-            <View
-              key={meal.name}
-              style={[styles.card, !isLogged && styles.cardEmpty]}
+            <Pressable
+              key={meal.id}
+              style={({ pressed }) => [
+                styles.card,
+                !isLogged && styles.cardEmpty,
+                pressed && styles.cardPressed,
+              ]}
+              onPress={() => {
+                console.log(`Meal pressed: ${meal.name} (id: ${meal.id})`);
+                onMealPress?.(meal);
+              }}
             >
               <View style={[styles.iconCircle, !isLogged && styles.iconCircleEmpty]}>
                 <Ionicons
@@ -42,7 +75,10 @@ export default function MealSummary({ meals }: MealSummaryProps) {
                 />
               </View>
 
-              <Text style={[styles.mealName, !isLogged && styles.textMuted]}>
+              <Text
+                style={[styles.mealName, !isLogged && styles.textMuted]}
+                numberOfLines={1}
+              >
                 {meal.name}
               </Text>
 
@@ -56,7 +92,7 @@ export default function MealSummary({ meals }: MealSummaryProps) {
               ) : (
                 <Text style={styles.notLogged}>Not logged</Text>
               )}
-            </View>
+            </Pressable>
           );
         })}
       </View>
@@ -68,11 +104,21 @@ const styles = StyleSheet.create({
   container: {
     paddingVertical: 4,
   },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 14,
+  },
   sectionTitle: {
     color: '#ffffff',
     fontSize: 17,
     fontWeight: '700',
-    marginBottom: 14,
+  },
+  mealCount: {
+    color: '#6b7280',
+    fontSize: 12,
+    fontWeight: '500',
   },
   grid: {
     flexDirection: 'row',
@@ -80,8 +126,8 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   card: {
-    flex: 1,
-    minWidth: '45%',
+    flexBasis: '47%',
+    flexGrow: 1,
     backgroundColor: '#1e2126',
     borderRadius: 14,
     padding: 14,
@@ -91,6 +137,11 @@ const styles = StyleSheet.create({
   cardEmpty: {
     borderColor: '#1e2126',
     opacity: 0.6,
+  },
+  cardPressed: {
+    backgroundColor: '#2a2d35',
+    opacity: 1,
+    transform: [{ scale: 0.97 }],
   },
   iconCircle: {
     width: 36,
