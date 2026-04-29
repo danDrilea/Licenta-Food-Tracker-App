@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { AppSettings, DEFAULT_SETTINGS, MealSlot, DailyGoals, MAX_MEALS } from '../types/settings';
+import { AppSettings, DEFAULT_SETTINGS, MealSlot, DailyGoals, MAX_MEALS, getNextMealId } from '../types/settings';
 import type { ThemeMode, WeightUnit, HeightUnit, EnergyUnit } from '../types/settings';
 
 const STORAGE_KEY = 'app_settings';
@@ -94,7 +94,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
 
   const addMeal = useCallback((name: string) => {
     if (settings.meals.length >= MAX_MEALS) return;
-    const id = `meal_${Date.now()}`;
+    const id = getNextMealId(settings.meals);
     const newMeal: MealSlot = {
       id,
       name,

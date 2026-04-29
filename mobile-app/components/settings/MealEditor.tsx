@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, Pressable, TextInput, Alert } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { MealSlot, MAX_MEALS, MEAL_ICON_OPTIONS } from '../../types/settings';
+import { MealSlot, MAX_MEALS } from '../../types/settings';
 
 interface MealEditorProps {
   meals: MealSlot[];

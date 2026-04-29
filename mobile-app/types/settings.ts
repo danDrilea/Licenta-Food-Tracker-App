@@ -7,7 +7,7 @@ export type HeightUnit = 'cm' | 'ft';
 export type EnergyUnit = 'kcal' | 'kj';
 
 export interface MealSlot {
-  id: string;
+  id: string;   // fixed: 'meal_1' through 'meal_8'
   name: string;
   icon: string; // Ionicons name
   enabled: boolean;
@@ -34,11 +34,20 @@ export interface AppSettings {
 
 export const MAX_MEALS = 8;
 
+/** Next available meal ID based on existing meals */
+export function getNextMealId(meals: MealSlot[]): string {
+  for (let i = 1; i <= MAX_MEALS; i++) {
+    const id = `meal_${i}`;
+    if (!meals.some((m) => m.id === id)) return id;
+  }
+  return `meal_${meals.length + 1}`;
+}
+
 export const DEFAULT_MEALS: MealSlot[] = [
-  { id: 'breakfast', name: 'Breakfast', icon: 'sunny-outline', enabled: true },
-  { id: 'lunch', name: 'Lunch', icon: 'restaurant-outline', enabled: true },
-  { id: 'dinner', name: 'Dinner', icon: 'moon-outline', enabled: true },
-  { id: 'snacks', name: 'Snacks', icon: 'cafe-outline', enabled: true },
+  { id: 'meal_1', name: 'Breakfast', icon: 'sunny-outline', enabled: true },
+  { id: 'meal_2', name: 'Lunch', icon: 'restaurant-outline', enabled: true },
+  { id: 'meal_3', name: 'Dinner', icon: 'moon-outline', enabled: true },
+  { id: 'meal_4', name: 'Snacks', icon: 'cafe-outline', enabled: true },
 ];
 
 export const DEFAULT_SETTINGS: AppSettings = {
