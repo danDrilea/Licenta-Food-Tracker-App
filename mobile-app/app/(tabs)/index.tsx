@@ -5,6 +5,8 @@ import WaterTracker from '../../components/dashboard/WaterTracker';
 import MealSummary from '../../components/dashboard/MealSummary';
 import StreakCounter from '../../components/dashboard/StreakCounter';
 import WeeklyChart from '../../components/dashboard/WeeklyChart';
+import { useSettings } from '../../contexts/SettingsContext';
+import type { DashboardMealData } from '../../components/dashboard/MealSummary';
 
 // ─── Mock data (will be replaced with real state/API later) ─────────
 const MOCK = {
@@ -14,13 +16,13 @@ const MOCK = {
     carbs: { consumed: 160, goal: 250 },
     fat: { consumed: 45, goal: 70 },
   },
-  water: { glasses: 5, goal: 8 },
-  meals: [
-    { id: 'breakfast', name: 'Breakfast', calories: 420, items: 3 },
-    { id: 'lunch', name: 'Lunch', calories: 650, items: 4 },
-    { id: 'dinner', name: 'Dinner', calories: 380, items: 2 },
-    { id: 'snacks', name: 'Snacks', calories: null, items: 0 },
-  ],
+  water: { glasses: 5 },
+  // Mock calorie data per meal id (will come from real food log later)
+  mealCalories: {
+    breakfast: { calories: 420, items: 3 },
+    lunch: { calories: 650, items: 4 },
+    dinner: { calories: 380, items: 2 },
+  } as Record<string, { calories: number; items: number }>,
   streak: 7,
   weeklyCalories: [1950, 2100, 1800, 2250, 1450, 0, 0],
 };
@@ -41,6 +43,22 @@ function getFormattedDate(): string {
 }
 
 export default function DashboardScreen() {
+  const { settings } = useSettings();
+
+  // Build meals from settings, overlaying mock calorie data
+  const meals: DashboardMealData[] = settings.meals
+    .filter((m) => m.enabled)
+    .map((slot) => {
+      const data = MOCK.mealCalories[slot.id];
+      return {
+        id: slot.id,
+        name: slot.name,
+        icon: slot.icon as any,
+        calories: data?.calories ?? null,
+        items: data?.items ?? 0,
+      };
+    });
+
   return (
     <ScrollView
       style={styles.scrollView}
@@ -73,7 +91,7 @@ export default function DashboardScreen() {
       {/* ─── 3. Today's Meals ─── */}
       <View style={styles.section}>
         <MealSummary
-          meals={MOCK.meals}
+          meals={meals}
           onMealPress={(meal) => {
             // TODO: navigate to journal tab with this meal focused
             console.log(`Navigate to journal → ${meal.name} (id: ${meal.id})`);
@@ -85,7 +103,7 @@ export default function DashboardScreen() {
       <View style={styles.card}>
         <WaterTracker
           initialGlasses={MOCK.water.glasses}
-          goal={MOCK.water.goal}
+          goal={settings.dailyGoals.waterGlasses}
         />
       </View>
 
