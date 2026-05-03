@@ -22,7 +22,7 @@ const MOCK_FOOD_ITEMS: Record<string, MealData['items']> = {
   ],
   dinner: [
     { id: 'd1', name: 'Salmon Fillet', calories: 250, amount: '150g', protein: 34, carbs: 0, fat: 12 },
-    { id: 'd2', name: 'Sweet Potato', calories: 130, amount: '180g', protein: 2, carbs: 30, fat: 0 },
+    { id: 'd2', name: 'Sweet Potatoes', calories: 130, amount: '180g', protein: 2, carbs: 30, fat: 0 },
   ],
 };
 
