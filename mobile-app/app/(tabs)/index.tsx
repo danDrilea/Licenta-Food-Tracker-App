@@ -1,3 +1,4 @@
+import React, { useMemo } from 'react';
 import { StyleSheet, Text, View, ScrollView } from 'react-native';
 import CalorieRing from '../../components/dashboard/CalorieRing';
 import MacroBreakdown from '../../components/dashboard/MacroBreakdown';
@@ -6,24 +7,12 @@ import MealSummary from '../../components/dashboard/MealSummary';
 import StreakCounter from '../../components/dashboard/StreakCounter';
 import WeeklyChart from '../../components/dashboard/WeeklyChart';
 import { useSettings } from '../../contexts/SettingsContext';
-import { useDailyData } from '../../contexts/DailyDataContext';
+import { useFoodLogs } from '../../hooks/useFoodLogs';
+import { useDailyLogs } from '../../hooks/useDailyLogs';
 import type { DashboardMealData } from '../../components/dashboard/MealSummary';
 
-// ─── Mock data (will be replaced with real state/API later) ─────────
+// ─── Mock data for features not yet migrated to SQLite ─────────
 const MOCK = {
-  calories: { consumed: 1450, goal: 2100 },
-  macros: {
-    protein: { consumed: 85, goal: 140 },
-    carbs: { consumed: 160, goal: 250 },
-    fat: { consumed: 45, goal: 70 },
-  },
-  water: { glasses: 5 },
-  // Mock calorie data per meal id (will come from real food log later)
-  mealCalories: {
-    breakfast: { calories: 420, items: 3 },
-    lunch: { calories: 650, items: 4 },
-    dinner: { calories: 380, items: 2 },
-  } as Record<string, { calories: number; items: number }>,
   streak: 7,
   weeklyCalories: [1950, 2100, 1800, 2250, 1450, 0, 0],
 };
@@ -45,19 +34,58 @@ function getFormattedDate(): string {
 
 export default function DashboardScreen() {
   const { settings } = useSettings();
-  const dailyData = useDailyData();
+  
+  // Format today's date local time
+  const todayStr = useMemo(() => {
+    const d = new Date();
+    const offset = d.getTimezoneOffset();
+    const localDate = new Date(d.getTime() - (offset * 60 * 1000));
+    return localDate.toISOString().split('T')[0];
+  }, []);
 
-  // Build meals from settings, overlaying mock calorie data
+  const { logs } = useFoodLogs(todayStr);
+  const { waterGlasses, setWaterGlasses } = useDailyLogs(todayStr);
+
+  // Group logs by meal_id
+  const logsByMeal = useMemo(() => {
+    const grouped: Record<string, typeof logs> = {};
+    logs.forEach(log => {
+      if (!grouped[log.meal_id]) grouped[log.meal_id] = [];
+      grouped[log.meal_id].push(log);
+    });
+    return grouped;
+  }, [logs]);
+
+  // Calculate daily totals
+  const totals = useMemo(() => {
+    return logs.reduce((acc, log) => ({
+      calories: acc.calories + log.calories,
+      protein: acc.protein + log.protein,
+      carbs: acc.carbs + log.carbs,
+      fat: acc.fat + log.fat,
+    }), { calories: 0, protein: 0, carbs: 0, fat: 0 });
+  }, [logs]);
+
+  // Build macros prop
+  const macros = {
+    calories: { consumed: totals.calories, goal: settings.dailyGoals.calories },
+    protein: { consumed: totals.protein, goal: settings.dailyGoals.protein },
+    carbs: { consumed: totals.carbs, goal: settings.dailyGoals.carbs },
+    fat: { consumed: totals.fat, goal: settings.dailyGoals.fat },
+  };
+
+  // Build meals from settings, overlaying actual calorie data
   const meals: DashboardMealData[] = settings.meals
     .filter((m) => m.enabled)
     .map((slot) => {
-      const data = MOCK.mealCalories[slot.id];
+      const mealLogs = logsByMeal[slot.id] || [];
+      const calories = mealLogs.reduce((sum, log) => sum + log.calories, 0);
       return {
         id: slot.id,
         name: slot.name,
         icon: slot.icon as any,
-        calories: data?.calories ?? null,
-        items: data?.items ?? 0,
+        calories: calories > 0 ? calories : null,
+        items: mealLogs.length,
       };
     });
 
@@ -76,17 +104,17 @@ export default function DashboardScreen() {
       {/* ─── 1. Calorie Ring ─── */}
       <View style={styles.section}>
         <CalorieRing
-          consumed={MOCK.calories.consumed}
-          goal={MOCK.calories.goal}
+          consumed={macros.calories.consumed}
+          goal={macros.calories.goal}
         />
       </View>
 
       {/* ─── 2. Macronutrients ─── */}
       <View style={styles.card}>
         <MacroBreakdown
-          protein={MOCK.macros.protein}
-          carbs={MOCK.macros.carbs}
-          fat={MOCK.macros.fat}
+          protein={macros.protein}
+          carbs={macros.carbs}
+          fat={macros.fat}
         />
       </View>
 
@@ -104,8 +132,8 @@ export default function DashboardScreen() {
       {/* ─── 4. Water Intake ─── */}
       <View style={styles.card}>
         <WaterTracker
-          glasses={dailyData.waterGlasses}
-          onGlassesChange={dailyData.setWaterGlasses}
+          glasses={waterGlasses}
+          onGlassesChange={setWaterGlasses}
           goal={settings.dailyGoals.waterGlasses}
         />
       </View>
@@ -119,7 +147,7 @@ export default function DashboardScreen() {
       <View style={styles.card}>
         <WeeklyChart
           data={MOCK.weeklyCalories}
-          goal={MOCK.calories.goal}
+          goal={macros.calories.goal}
         />
       </View>
 
@@ -168,3 +196,4 @@ const styles = StyleSheet.create({
     height: 30,
   },
 });
+

@@ -1,51 +1,65 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { StyleSheet, View, ScrollView } from 'react-native';
 import DateStrip from '../../components/journal/DateStrip';
 import DailyMacroSummary from '../../components/journal/DailyMacroSummary';
 import MealSection, { MealData } from '../../components/journal/MealSection';
 import WaterTracker from '../../components/dashboard/WaterTracker';
+import AddFoodModal from '../../components/journal/AddFoodModal';
 import { useSettings } from '../../contexts/SettingsContext';
-import { useDailyData } from '../../contexts/DailyDataContext';
-
-// Mock food items keyed by meal slot id (will come from real food log later)
-const MOCK_FOOD_ITEMS: Record<string, MealData['items']> = {
-  meal_1: [
-    { id: 'b1', name: 'Greek Yogurt', calories: 150, amount: '200g', protein: 18, carbs: 8, fat: 5 },
-    { id: 'b2', name: 'Granola', calories: 180, amount: '40g', protein: 4, carbs: 28, fat: 6 },
-    { id: 'b3', name: 'Banana', calories: 90, amount: '1 medium', protein: 1, carbs: 23, fat: 0 },
-  ],
-  meal_2: [
-    { id: 'l1', name: 'Grilled Chicken Breast', calories: 280, amount: '200g', protein: 52, carbs: 0, fat: 6 },
-    { id: 'l2', name: 'Brown Rice', calories: 215, amount: '150g', protein: 5, carbs: 45, fat: 2 },
-    { id: 'l3', name: 'Mixed Salad', calories: 85, amount: '1 bowl', protein: 3, carbs: 12, fat: 3 },
-    { id: 'l4', name: 'Olive Oil Dressing', calories: 70, amount: '1 tbsp', protein: 0, carbs: 0, fat: 8 },
-  ],
-  meal_3: [
-    { id: 'd1', name: 'Salmon Fillet', calories: 250, amount: '150g', protein: 34, carbs: 0, fat: 12 },
-    { id: 'd2', name: 'Sweet Potatoes', calories: 130, amount: '180g', protein: 2, carbs: 30, fat: 0 },
-  ],
-};
-
-const MOCK_MACROS = {
-  calories: { consumed: 1450, goal: 2100 },
-  protein: { consumed: 119, goal: 140 },
-  carbs: { consumed: 146, goal: 250 },
-  fat: { consumed: 42, goal: 70 },
-};
+import { useFoodLogs } from '../../hooks/useFoodLogs';
+import { useDailyLogs } from '../../hooks/useDailyLogs';
 
 export default function JournalScreen() {
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const [addingFoodToMeal, setAddingFoodToMeal] = useState<{id: string, name: string} | null>(null);
   const { settings } = useSettings();
-  const dailyData = useDailyData();
+  
+  // Format date as YYYY-MM-DD local time to avoid timezone shifts
+  const dateStr = useMemo(() => {
+    const offset = selectedDate.getTimezoneOffset();
+    const localDate = new Date(selectedDate.getTime() - (offset * 60 * 1000));
+    return localDate.toISOString().split('T')[0];
+  }, [selectedDate]);
 
-  // Build meals from settings, overlaying mock food items
+  const { logs, addFoodLog } = useFoodLogs(dateStr);
+  const { waterGlasses, setWaterGlasses } = useDailyLogs(dateStr);
+
+  // Group logs by meal_id
+  const logsByMeal = useMemo(() => {
+    const grouped: Record<string, typeof logs> = {};
+    logs.forEach(log => {
+      if (!grouped[log.meal_id]) grouped[log.meal_id] = [];
+      grouped[log.meal_id].push(log);
+    });
+    return grouped;
+  }, [logs]);
+
+  // Calculate daily totals
+  const totals = useMemo(() => {
+    return logs.reduce((acc, log) => ({
+      calories: acc.calories + log.calories,
+      protein: acc.protein + log.protein,
+      carbs: acc.carbs + log.carbs,
+      fat: acc.fat + log.fat,
+    }), { calories: 0, protein: 0, carbs: 0, fat: 0 });
+  }, [logs]);
+
+  // Build macros prop
+  const macros = {
+    calories: { consumed: totals.calories, goal: settings.dailyGoals.calories },
+    protein: { consumed: totals.protein, goal: settings.dailyGoals.protein },
+    carbs: { consumed: totals.carbs, goal: settings.dailyGoals.carbs },
+    fat: { consumed: totals.fat, goal: settings.dailyGoals.fat },
+  };
+
+  // Build meals from settings, overlaying actual food items
   const meals: MealData[] = settings.meals
     .filter((m) => m.enabled)
     .map((slot) => ({
       id: slot.id,
       name: slot.name,
       icon: slot.icon as any,
-      items: MOCK_FOOD_ITEMS[slot.id] ?? [],
+      items: logsByMeal[slot.id] ?? [],
     }));
 
   return (
@@ -60,10 +74,10 @@ export default function JournalScreen() {
       >
         {/* Daily macro summary */}
         <DailyMacroSummary
-          calories={MOCK_MACROS.calories}
-          protein={MOCK_MACROS.protein}
-          carbs={MOCK_MACROS.carbs}
-          fat={MOCK_MACROS.fat}
+          calories={macros.calories}
+          protein={macros.protein}
+          carbs={macros.carbs}
+          fat={macros.fat}
         />
 
         {/* Meal sections */}
@@ -72,7 +86,7 @@ export default function JournalScreen() {
             <MealSection
               key={meal.id}
               meal={meal}
-              onAddFood={() => console.log(`Add food to ${meal.name}`)}
+              onAddFood={() => setAddingFoodToMeal({ id: meal.id, name: meal.name })}
             />
           ))}
         </View>
@@ -80,8 +94,8 @@ export default function JournalScreen() {
         {/* Water intake */}
         <View style={styles.card}>
           <WaterTracker
-            glasses={dailyData.waterGlasses}
-            onGlassesChange={dailyData.setWaterGlasses}
+            glasses={waterGlasses}
+            onGlassesChange={setWaterGlasses}
             goal={settings.dailyGoals.waterGlasses}
           />
         </View>
@@ -89,6 +103,22 @@ export default function JournalScreen() {
         {/* Bottom spacer for tab bar */}
         <View style={styles.bottomSpacer} />
       </ScrollView>
+
+      {/* Add Food Modal */}
+      <AddFoodModal
+        visible={addingFoodToMeal !== null}
+        mealName={addingFoodToMeal?.name ?? ''}
+        onClose={() => setAddingFoodToMeal(null)}
+        onSave={(food) => {
+          if (addingFoodToMeal) {
+            addFoodLog({
+              meal_id: addingFoodToMeal.id,
+              date: dateStr,
+              ...food
+            });
+          }
+        }}
+      />
     </View>
   );
 }
@@ -122,3 +152,4 @@ const styles = StyleSheet.create({
     height: 30,
   },
 });
+
