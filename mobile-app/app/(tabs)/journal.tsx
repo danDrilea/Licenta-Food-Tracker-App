@@ -9,18 +9,18 @@ import { useDailyData } from '../../contexts/DailyDataContext';
 
 // Mock food items keyed by meal slot id (will come from real food log later)
 const MOCK_FOOD_ITEMS: Record<string, MealData['items']> = {
-  breakfast: [
+  meal_1: [
     { id: 'b1', name: 'Greek Yogurt', calories: 150, amount: '200g', protein: 18, carbs: 8, fat: 5 },
     { id: 'b2', name: 'Granola', calories: 180, amount: '40g', protein: 4, carbs: 28, fat: 6 },
     { id: 'b3', name: 'Banana', calories: 90, amount: '1 medium', protein: 1, carbs: 23, fat: 0 },
   ],
-  lunch: [
+  meal_2: [
     { id: 'l1', name: 'Grilled Chicken Breast', calories: 280, amount: '200g', protein: 52, carbs: 0, fat: 6 },
     { id: 'l2', name: 'Brown Rice', calories: 215, amount: '150g', protein: 5, carbs: 45, fat: 2 },
     { id: 'l3', name: 'Mixed Salad', calories: 85, amount: '1 bowl', protein: 3, carbs: 12, fat: 3 },
     { id: 'l4', name: 'Olive Oil Dressing', calories: 70, amount: '1 tbsp', protein: 0, carbs: 0, fat: 8 },
   ],
-  dinner: [
+  meal_3: [
     { id: 'd1', name: 'Salmon Fillet', calories: 250, amount: '150g', protein: 34, carbs: 0, fat: 12 },
     { id: 'd2', name: 'Sweet Potatoes', calories: 130, amount: '180g', protein: 2, carbs: 30, fat: 0 },
   ],

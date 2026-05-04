@@ -1,5 +1,6 @@
 import React from 'react';
-import { StyleSheet, View, ScrollView, Text } from 'react-native';
+import { StyleSheet, View, Text } from 'react-native';
+import { NestableScrollContainer } from 'react-native-draggable-flatlist';
 import { useSettings } from '../../contexts/SettingsContext';
 import { SettingsGroup, SettingsRow, SettingsToggleRow } from '../../components/settings/SettingsRow';
 import MealEditor from '../../components/settings/MealEditor';
@@ -23,7 +24,7 @@ export default function SettingsScreen() {
   } = useSettings();
 
   return (
-    <ScrollView
+    <NestableScrollContainer
       style={styles.scrollView}
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
@@ -111,7 +112,7 @@ export default function SettingsScreen() {
       </View>
 
       <View style={styles.bottomSpacer} />
-    </ScrollView>
+    </NestableScrollContainer>
   );
 }
 

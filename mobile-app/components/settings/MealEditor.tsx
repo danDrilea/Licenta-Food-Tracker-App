@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, Pressable, TextInput, Alert } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import NestableDraggableFlatList, { ScaleDecorator, RenderItemParams } from 'react-native-draggable-flatlist';
 import { MealSlot, MAX_MEALS } from '../../types/settings';
 
 interface MealEditorProps {
@@ -57,6 +58,59 @@ export default function MealEditor({
     );
   };
 
+  const renderItem = ({ item: meal, drag, isActive, getIndex }: RenderItemParams<MealSlot>) => {
+    const index = getIndex() ?? 0;
+    return (
+      <ScaleDecorator activeScale={1}>
+        <View
+          style={[
+            styles.mealRow,
+            index < meals.length - 1 && styles.mealRowBorder,
+            isActive && { backgroundColor: '#2a2d35' },
+          ]}
+        >
+          <Pressable onPressIn={drag} style={styles.dragHandle} hitSlop={8}>
+            <Ionicons name="menu-outline" size={20} color="#6b7280" />
+          </Pressable>
+
+          <View style={styles.mealIcon}>
+            <Ionicons name={meal.icon as any} size={18} color="#c77ffb" />
+          </View>
+
+          {editingId === meal.id ? (
+            <View style={styles.editRow}>
+              <TextInput
+                style={styles.editInput}
+                value={editName}
+                onChangeText={setEditName}
+                autoFocus
+                maxLength={20}
+                placeholderTextColor="#4b5563"
+                onSubmitEditing={saveEdit}
+                onBlur={saveEdit}
+              />
+              <Pressable onPress={saveEdit} hitSlop={8}>
+                <Ionicons name="checkmark-circle" size={22} color="#4ade80" />
+              </Pressable>
+            </View>
+          ) : (
+            <View style={styles.displayRow}>
+              <Text style={styles.mealName}>{meal.name}</Text>
+              <View style={styles.actions}>
+                <Pressable onPress={() => startEdit(meal)} hitSlop={8} style={styles.actionBtn}>
+                  <Ionicons name="pencil-outline" size={16} color="#6b7280" />
+                </Pressable>
+                <Pressable onPress={() => confirmRemove(meal)} hitSlop={8} style={styles.actionBtn}>
+                  <Ionicons name="trash-outline" size={16} color="#ef4444" />
+                </Pressable>
+              </View>
+            </View>
+          )}
+        </View>
+      </ScaleDecorator>
+    );
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -65,50 +119,13 @@ export default function MealEditor({
       </View>
 
       <View style={styles.card}>
-        {meals.map((meal, index) => (
-          <View
-            key={meal.id}
-            style={[styles.mealRow, index < meals.length - 1 && styles.mealRowBorder]}
-          >
-            {/* Icon */}
-            <View style={styles.mealIcon}>
-              <Ionicons name={meal.icon as any} size={18} color="#c77ffb" />
-            </View>
+        <NestableDraggableFlatList
+          data={meals}
+          onDragEnd={({ data }) => onUpdateMeals(data)}
+          keyExtractor={(item) => item.id}
+          renderItem={renderItem}
+        />
 
-            {/* Name (editable or display) */}
-            {editingId === meal.id ? (
-              <View style={styles.editRow}>
-                <TextInput
-                  style={styles.editInput}
-                  value={editName}
-                  onChangeText={setEditName}
-                  autoFocus
-                  maxLength={20}
-                  placeholderTextColor="#4b5563"
-                  onSubmitEditing={saveEdit}
-                  onBlur={saveEdit}
-                />
-                <Pressable onPress={saveEdit} hitSlop={8}>
-                  <Ionicons name="checkmark-circle" size={22} color="#4ade80" />
-                </Pressable>
-              </View>
-            ) : (
-              <View style={styles.displayRow}>
-                <Text style={styles.mealName}>{meal.name}</Text>
-                <View style={styles.actions}>
-                  <Pressable onPress={() => startEdit(meal)} hitSlop={8} style={styles.actionBtn}>
-                    <Ionicons name="pencil-outline" size={16} color="#6b7280" />
-                  </Pressable>
-                  <Pressable onPress={() => confirmRemove(meal)} hitSlop={8} style={styles.actionBtn}>
-                    <Ionicons name="trash-outline" size={16} color="#ef4444" />
-                  </Pressable>
-                </View>
-              </View>
-            )}
-          </View>
-        ))}
-
-        {/* Add new meal */}
         {isAdding ? (
           <View style={styles.addRow}>
             <Ionicons name="fast-food-outline" size={18} color="#6b7280" style={styles.addIcon} />
@@ -187,6 +204,10 @@ const styles = StyleSheet.create({
   mealRowBorder: {
     borderBottomWidth: 1,
     borderBottomColor: '#2a2d35',
+  },
+  dragHandle: {
+    padding: 4,
+    marginLeft: -4,
   },
   mealIcon: {
     width: 32,
