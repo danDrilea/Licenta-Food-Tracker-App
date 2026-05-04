@@ -9,13 +9,8 @@ import WeeklyChart from '../../components/dashboard/WeeklyChart';
 import { useSettings } from '../../contexts/SettingsContext';
 import { useFoodLogs } from '../../hooks/useFoodLogs';
 import { useDailyLogs } from '../../hooks/useDailyLogs';
+import { useWeeklyStats } from '../../hooks/useWeeklyStats';
 import type { DashboardMealData } from '../../components/dashboard/MealSummary';
-
-// ─── Mock data for features not yet migrated to SQLite ─────────
-const MOCK = {
-  streak: 7,
-  weeklyCalories: [1950, 2100, 1800, 2250, 1450, 0, 0],
-};
 
 function getGreeting(): string {
   const hour = new Date().getHours();
@@ -45,6 +40,7 @@ export default function DashboardScreen() {
 
   const { logs } = useFoodLogs(todayStr);
   const { waterGlasses, setWaterGlasses } = useDailyLogs(todayStr);
+  const { weeklyCalories, streak } = useWeeklyStats();
 
   // Group logs by meal_id
   const logsByMeal = useMemo(() => {
@@ -140,13 +136,13 @@ export default function DashboardScreen() {
 
       {/* ─── 5. Streak ─── */}
       <View style={styles.section}>
-        <StreakCounter days={MOCK.streak} />
+        <StreakCounter days={streak} />
       </View>
 
       {/* ─── 6. Weekly Overview ─── */}
       <View style={styles.card}>
         <WeeklyChart
-          data={MOCK.weeklyCalories}
+          data={weeklyCalories}
           goal={macros.calories.goal}
         />
       </View>

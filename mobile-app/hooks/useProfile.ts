@@ -1,0 +1,102 @@
+import { useState, useCallback } from 'react';
+import { useFocusEffect } from 'expo-router';
+import { useSQLiteContext } from 'expo-sqlite';
+import { UserProfile, WeightEntry } from '../types/profile';
+
+export function useProfile() {
+  const db = useSQLiteContext();
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+
+  const fetchProfile = useCallback(async () => {
+    try {
+      const row = await db.getFirstAsync<any>('SELECT * FROM profile WHERE id = 1');
+      if (row) {
+        setProfile({
+          firstName: row.first_name,
+          lastName: row.last_name,
+          dateOfBirth: row.dob,
+          country: row.country,
+          sex: row.sex,
+          heightCm: row.height_cm,
+          currentWeightKg: row.current_weight_kg,
+          activityLevel: row.activity_level,
+          goal: {
+            type: row.goal_type,
+            targetWeight: row.target_weight,
+            weeklyRate: row.weekly_rate,
+          },
+          weightHistory: [], // Fetched separately
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching profile:', error);
+    }
+  }, [db]);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchProfile();
+    }, [fetchProfile])
+  );
+
+  const updateProfile = async (updates: Partial<UserProfile>) => {
+    try {
+      // Simplification: directly mapping fields
+      // In a real app, you'd build the query dynamically
+      await db.runAsync(
+        `UPDATE profile SET 
+          first_name = COALESCE(?, first_name),
+          last_name = COALESCE(?, last_name),
+          current_weight_kg = COALESCE(?, current_weight_kg)
+          WHERE id = 1`,
+        [
+          updates.firstName ?? null,
+          updates.lastName ?? null,
+          updates.currentWeightKg ?? null
+        ]
+      );
+      await fetchProfile();
+    } catch (error) {
+      console.error('Error updating profile:', error);
+    }
+  };
+
+  return { profile, updateProfile, refreshProfile: fetchProfile };
+}
+
+export function useWeightHistory() {
+  const db = useSQLiteContext();
+  const [history, setHistory] = useState<WeightEntry[]>([]);
+
+  const fetchHistory = useCallback(async () => {
+    try {
+      const rows = await db.getAllAsync<any>('SELECT * FROM weight_history ORDER BY date DESC');
+      setHistory(rows.map(r => ({ date: r.date, weight: r.weight })));
+    } catch (error) {
+      console.error('Error fetching weight history:', error);
+    }
+  }, [db]);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchHistory();
+    }, [fetchHistory])
+  );
+
+  const addWeightEntry = async (date: string, weight: number) => {
+    const id = Math.random().toString(36).substring(2, 15);
+    try {
+      await db.runAsync(
+        'INSERT INTO weight_history (id, date, weight) VALUES (?, ?, ?)',
+        [id, date, weight]
+      );
+      // Also update current weight in profile
+      await db.runAsync('UPDATE profile SET current_weight_kg = ? WHERE id = 1', [weight]);
+      await fetchHistory();
+    } catch (error) {
+      console.error('Error adding weight entry:', error);
+    }
+  };
+
+  return { history, addWeightEntry, refreshHistory: fetchHistory };
+}

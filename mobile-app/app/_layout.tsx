@@ -8,6 +8,7 @@ import { initDatabase } from "../db/database";
 // Ignore warning caused by NestableDraggableFlatList inside NestableScrollContainer
 LogBox.ignoreLogs([
   'VirtualizedLists should never be nested',
+  'VirtualizedList: You have a large list that is slow to update',
   'InteractionManager has been deprecated',
 ]);
 
