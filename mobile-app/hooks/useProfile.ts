@@ -10,6 +10,8 @@ export function useProfile() {
   const fetchProfile = useCallback(async () => {
     try {
       const row = await db.getFirstAsync<any>('SELECT * FROM profile WHERE id = 1');
+      const latestWeight = await db.getFirstAsync<any>('SELECT weight FROM weight_history ORDER BY date DESC LIMIT 1');
+      
       if (row) {
         setProfile({
           firstName: row.first_name,
@@ -18,7 +20,7 @@ export function useProfile() {
           country: row.country,
           sex: row.sex,
           heightCm: row.height_cm,
-          currentWeightKg: row.current_weight_kg,
+          currentWeightKg: latestWeight?.weight || 70, // Fallback to a default if history empty
           activityLevel: row.activity_level,
           goal: {
             type: row.goal_type,
@@ -41,18 +43,20 @@ export function useProfile() {
 
   const updateProfile = async (updates: Partial<UserProfile>) => {
     try {
-      // Simplification: directly mapping fields
-      // In a real app, you'd build the query dynamically
       await db.runAsync(
         `UPDATE profile SET 
           first_name = COALESCE(?, first_name),
           last_name = COALESCE(?, last_name),
-          current_weight_kg = COALESCE(?, current_weight_kg)
+          height_cm = COALESCE(?, height_cm),
+          sex = COALESCE(?, sex),
+          activity_level = COALESCE(?, activity_level)
           WHERE id = 1`,
         [
           updates.firstName ?? null,
           updates.lastName ?? null,
-          updates.currentWeightKg ?? null
+          updates.heightCm ?? null,
+          updates.sex ?? null,
+          updates.activityLevel ?? null
         ]
       );
       await fetchProfile();
@@ -90,8 +94,6 @@ export function useWeightHistory() {
         'INSERT INTO weight_history (id, date, weight) VALUES (?, ?, ?)',
         [id, date, weight]
       );
-      // Also update current weight in profile
-      await db.runAsync('UPDATE profile SET current_weight_kg = ? WHERE id = 1', [weight]);
       await fetchHistory();
     } catch (error) {
       console.error('Error adding weight entry:', error);

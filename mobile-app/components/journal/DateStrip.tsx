@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, Pressable, FlatList } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
@@ -36,8 +36,20 @@ function isToday(date: Date): boolean {
 }
 
 export default function DateStrip({ selectedDate, onDateChange }: DateStripProps) {
+  const flatListRef = useRef<FlatList>(null);
   const days = getDaysAroundDate(selectedDate);
-  const todayIndex = days.findIndex((d) => isToday(d));
+
+  // Sync scroll position when selectedDate changes
+  useEffect(() => {
+    const index = days.findIndex((d) => isSameDay(d, selectedDate));
+    if (index !== -1 && flatListRef.current) {
+      flatListRef.current.scrollToIndex({
+        index,
+        animated: true,
+        viewPosition: 0.5, // Center the selected date
+      });
+    }
+  }, [selectedDate]);
 
   const goToPrevDay = () => {
     const prev = new Date(selectedDate);
@@ -85,6 +97,7 @@ export default function DateStrip({ selectedDate, onDateChange }: DateStripProps
 
       {/* Day strip */}
       <FlatList
+        ref={flatListRef}
         data={days}
         horizontal
         showsHorizontalScrollIndicator={false}

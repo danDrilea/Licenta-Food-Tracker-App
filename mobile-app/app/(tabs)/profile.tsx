@@ -1,5 +1,6 @@
 import React from 'react';
 import { StyleSheet, View, ScrollView, Text } from 'react-native';
+import { useRouter } from 'expo-router';
 import { UserProfile, WeightEntry } from '../../types/profile';
 import ProfileHeader from '../../components/profile/ProfileHeader';
 import UserInfoSection from '../../components/profile/UserInfoSection';
@@ -10,6 +11,7 @@ import WeightHistoryChart from '../../components/profile/WeightHistoryChart';
 import { useProfile, useWeightHistory } from '../../hooks/useProfile';
 
 export default function ProfileScreen() {
+  const router = useRouter();
   const { profile } = useProfile();
   const { history } = useWeightHistory();
 
@@ -75,7 +77,7 @@ export default function ProfileScreen() {
       <View style={styles.section}>
         <WeightHistoryChart
           entries={user.weightHistory}
-          onLogWeight={() => console.log('Log weight → open weight input')}
+          onLogWeight={() => router.push('/log-weight')}
         />
       </View>
 

@@ -1,33 +1,21 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useSQLiteContext } from 'expo-sqlite';
 import { AppSettings, DEFAULT_SETTINGS, MealSlot, DailyGoals, MAX_MEALS, getNextMealId } from '../types/settings';
 import type { ThemeMode, WeightUnit, HeightUnit, EnergyUnit } from '../types/settings';
-
-const STORAGE_KEY = 'app_settings';
 
 interface SettingsContextType {
   settings: AppSettings;
   isLoading: boolean;
-
-  // Theme
   setTheme: (theme: ThemeMode) => void;
   toggleTheme: () => void;
-
-  // Units
   setWeightUnit: (unit: WeightUnit) => void;
   setHeightUnit: (unit: HeightUnit) => void;
   setEnergyUnit: (unit: EnergyUnit) => void;
-
-  // Meals
   updateMeals: (meals: MealSlot[]) => void;
   addMeal: (name: string) => void;
   removeMeal: (id: string) => void;
   renameMeal: (id: string, newName: string) => void;
-
-  // Goals
   updateDailyGoals: (goals: DailyGoals) => void;
-
-  // Notifications
   setNotificationsEnabled: (enabled: boolean) => void;
   setMealReminders: (enabled: boolean) => void;
 }
@@ -35,99 +23,108 @@ interface SettingsContextType {
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
 
 export function SettingsProvider({ children }: { children: React.ReactNode }) {
+  const db = useSQLiteContext();
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Load settings from storage on mount
-  useEffect(() => {
-    (async () => {
-      try {
-        const stored = await AsyncStorage.getItem(STORAGE_KEY);
-        if (stored) {
-          const parsed = JSON.parse(stored) as Partial<AppSettings>;
-          setSettings({ ...DEFAULT_SETTINGS, ...parsed });
-        }
-      } catch (e) {
-        console.warn('Failed to load settings:', e);
-      } finally {
-        setIsLoading(false);
-      }
-    })();
-  }, []);
-
-  // Persist settings whenever they change
-  const persist = useCallback(async (newSettings: AppSettings) => {
-    setSettings(newSettings);
+  const fetchSettings = useCallback(async () => {
     try {
-      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(newSettings));
+      // 1. Fetch Basic Settings
+      const basicRows = await db.getAllAsync<{ key: string, value: string }>('SELECT * FROM settings');
+      const basicMap = Object.fromEntries(basicRows.map(r => [r.key, r.value]));
+
+      // 2. Fetch Meal Slots
+      const mealRows = await db.getAllAsync<any>('SELECT * FROM meal_slots ORDER BY sort_order ASC');
+      const meals: MealSlot[] = mealRows.map(r => ({
+        id: r.id,
+        name: r.name,
+        icon: r.icon,
+        enabled: Boolean(r.enabled),
+      }));
+
+      // 3. Fetch Goals
+      const goalRow = await db.getFirstAsync<any>('SELECT * FROM daily_goals WHERE id = 1');
+      const dailyGoals: DailyGoals = {
+        calories: goalRow?.calories ?? 2000,
+        protein: goalRow?.protein ?? 150,
+        carbs: goalRow?.carbs ?? 250,
+        fat: goalRow?.fat ?? 70,
+        waterGlasses: goalRow?.water_glasses ?? 8,
+      };
+
+      setSettings({
+        theme: (basicMap.theme as ThemeMode) ?? 'dark',
+        weightUnit: (basicMap.weightUnit as WeightUnit) ?? 'kg',
+        heightUnit: (basicMap.heightUnit as HeightUnit) ?? 'cm',
+        energyUnit: (basicMap.energyUnit as EnergyUnit) ?? 'kcal',
+        meals,
+        dailyGoals,
+        notificationsEnabled: basicMap.notificationsEnabled === 'true',
+        mealReminders: basicMap.mealReminders === 'true',
+      });
     } catch (e) {
-      console.warn('Failed to save settings:', e);
+      console.error('Failed to load settings from DB:', e);
+    } finally {
+      setIsLoading(false);
     }
-  }, []);
+  }, [db]);
 
-  // ─── Theme ─────────────────────────────────────
-  const setTheme = useCallback((theme: ThemeMode) => {
-    persist({ ...settings, theme });
-  }, [settings, persist]);
+  useEffect(() => {
+    fetchSettings();
+  }, [fetchSettings]);
 
+  const updateBasicSetting = async (key: string, value: string) => {
+    await db.runAsync('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)', [key, value]);
+    await fetchSettings();
+  };
+
+  const setTheme = useCallback((theme: ThemeMode) => updateBasicSetting('theme', theme), [updateBasicSetting]);
   const toggleTheme = useCallback(() => {
-    persist({ ...settings, theme: settings.theme === 'dark' ? 'light' : 'dark' });
-  }, [settings, persist]);
+    const newTheme = settings.theme === 'dark' ? 'light' : 'dark';
+    updateBasicSetting('theme', newTheme);
+  }, [settings.theme, updateBasicSetting]);
 
-  // ─── Units ─────────────────────────────────────
-  const setWeightUnit = useCallback((weightUnit: WeightUnit) => {
-    persist({ ...settings, weightUnit });
-  }, [settings, persist]);
+  const setWeightUnit = useCallback((unit: WeightUnit) => updateBasicSetting('weightUnit', unit), [updateBasicSetting]);
+  const setHeightUnit = useCallback((unit: HeightUnit) => updateBasicSetting('heightUnit', unit), [updateBasicSetting]);
+  const setEnergyUnit = useCallback((unit: EnergyUnit) => updateBasicSetting('energyUnit', unit), [updateBasicSetting]);
+  const setNotificationsEnabled = useCallback((enabled: boolean) => updateBasicSetting('notificationsEnabled', String(enabled)), [updateBasicSetting]);
+  const setMealReminders = useCallback((enabled: boolean) => updateBasicSetting('mealReminders', String(enabled)), [updateBasicSetting]);
 
-  const setHeightUnit = useCallback((heightUnit: HeightUnit) => {
-    persist({ ...settings, heightUnit });
-  }, [settings, persist]);
+  const updateDailyGoals = useCallback(async (goals: DailyGoals) => {
+    await db.runAsync(
+      'UPDATE daily_goals SET calories = ?, protein = ?, carbs = ?, fat = ?, water_glasses = ? WHERE id = 1',
+      [goals.calories, goals.protein, goals.carbs, goals.fat, goals.waterGlasses]
+    );
+    await fetchSettings();
+  }, [db, fetchSettings]);
 
-  const setEnergyUnit = useCallback((energyUnit: EnergyUnit) => {
-    persist({ ...settings, energyUnit });
-  }, [settings, persist]);
-
-  // ─── Meals ─────────────────────────────────────
-  const updateMeals = useCallback((meals: MealSlot[]) => {
-    persist({ ...settings, meals: meals.slice(0, MAX_MEALS) });
-  }, [settings, persist]);
-
-  const addMeal = useCallback((name: string) => {
+  const addMeal = useCallback(async (name: string) => {
     if (settings.meals.length >= MAX_MEALS) return;
     const id = getNextMealId(settings.meals);
-    const newMeal: MealSlot = {
-      id,
-      name,
-      icon: 'fast-food-outline',
-      enabled: true,
-    };
-    persist({ ...settings, meals: [...settings.meals, newMeal] });
-  }, [settings, persist]);
+    await db.runAsync(
+      'INSERT INTO meal_slots (id, name, icon, sort_order, enabled) VALUES (?, ?, ?, ?, ?)',
+      [id, name, 'fast-food-outline', settings.meals.length, 1]
+    );
+    await fetchSettings();
+  }, [db, settings.meals, fetchSettings]);
 
-  const removeMeal = useCallback((id: string) => {
-    persist({ ...settings, meals: settings.meals.filter((m) => m.id !== id) });
-  }, [settings, persist]);
+  const removeMeal = useCallback(async (id: string) => {
+    await db.runAsync('DELETE FROM meal_slots WHERE id = ?', [id]);
+    await fetchSettings();
+  }, [db, fetchSettings]);
 
-  const renameMeal = useCallback((id: string, newName: string) => {
-    persist({
-      ...settings,
-      meals: settings.meals.map((m) => (m.id === id ? { ...m, name: newName } : m)),
-    });
-  }, [settings, persist]);
+  const renameMeal = useCallback(async (id: string, newName: string) => {
+    await db.runAsync('UPDATE meal_slots SET name = ? WHERE id = ?', [newName, id]);
+    await fetchSettings();
+  }, [db, fetchSettings]);
 
-  // ─── Goals ─────────────────────────────────────
-  const updateDailyGoals = useCallback((dailyGoals: DailyGoals) => {
-    persist({ ...settings, dailyGoals });
-  }, [settings, persist]);
-
-  // ─── Notifications ────────────────────────────
-  const setNotificationsEnabled = useCallback((notificationsEnabled: boolean) => {
-    persist({ ...settings, notificationsEnabled });
-  }, [settings, persist]);
-
-  const setMealReminders = useCallback((mealReminders: boolean) => {
-    persist({ ...settings, mealReminders });
-  }, [settings, persist]);
+  const updateMeals = useCallback(async (meals: MealSlot[]) => {
+    // Transactional update for sort order
+    for (let i = 0; i < meals.length; i++) {
+      await db.runAsync('UPDATE meal_slots SET sort_order = ?, enabled = ? WHERE id = ?', [i, meals[i].enabled ? 1 : 0, meals[i].id]);
+    }
+    await fetchSettings();
+  }, [db, fetchSettings]);
 
   return (
     <SettingsContext.Provider
@@ -155,8 +152,6 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
 
 export function useSettings() {
   const context = useContext(SettingsContext);
-  if (!context) {
-    throw new Error('useSettings must be used within a SettingsProvider');
-  }
+  if (!context) throw new Error('useSettings must be used within a SettingsProvider');
   return context;
 }

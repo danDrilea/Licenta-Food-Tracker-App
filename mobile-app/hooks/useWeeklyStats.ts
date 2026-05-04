@@ -6,21 +6,22 @@ export function useWeeklyStats() {
   const db = useSQLiteContext();
   const [weeklyCalories, setWeeklyCalories] = useState<number[]>([0, 0, 0, 0, 0, 0, 0]);
   const [streak, setStreak] = useState<number>(0);
+  const [isFrozen, setIsFrozenState] = useState(false);
 
   const fetchStats = useCallback(async () => {
     try {
-      const today = new Date();
-      const last7Days: string[] = [];
+      const now = new Date();
+      const localNow = new Date(now.getTime() - (now.getTimezoneOffset() * 60 * 1000));
+      const todayStr = localNow.toISOString().split('T')[0];
       
+      // 1. Calculate Weekly Calories (last 7 days)
+      const last7Days: string[] = [];
       for (let i = 6; i >= 0; i--) {
-        const d = new Date();
-        d.setDate(today.getDate() - i);
-        const offset = d.getTimezoneOffset();
-        const localDate = new Date(d.getTime() - (offset * 60 * 1000));
-        last7Days.push(localDate.toISOString().split('T')[0]);
+        const d = new Date(now.getTime() - (now.getTimezoneOffset() * 60 * 1000));
+        d.setDate(d.getDate() - i);
+        last7Days.push(d.toISOString().split('T')[0]);
       }
 
-      // 1. Calculate Weekly Calories
       const calorieResults = await Promise.all(
         last7Days.map(date => 
           db.getFirstAsync<{ total: number }>(
@@ -31,14 +32,30 @@ export function useWeeklyStats() {
       );
       setWeeklyCalories(calorieResults.map(r => r?.total || 0));
 
-      // 2. Calculate Streak (consecutive days with logs backwards from today)
+      // 2. Calculate Streak with 1 Grace Day
       let currentStreak = 0;
-      let checkDate = new Date();
+      let missesAllowed = 1;
+      let isFrozenStatus = false;
       
-      while (true) {
-        const offset = checkDate.getTimezoneOffset();
-        const localDate = new Date(checkDate.getTime() - (offset * 60 * 1000));
-        const dateStr = localDate.toISOString().split('T')[0];
+      // Check today first
+      const todayResult = await db.getFirstAsync<{ count: number }>(
+        'SELECT COUNT(*) as count FROM food_entries WHERE date = ?',
+        [todayStr]
+      );
+      
+      const hasLoggedToday = todayResult && todayResult.count > 0;
+      
+      // We are "Frozen" ONLY if we haven't logged today yet
+      if (!hasLoggedToday) {
+        isFrozenStatus = true;
+        missesAllowed = 0; // Today is our grace day
+      }
+
+      // Loop back up to 365 days
+      for (let i = (hasLoggedToday ? 0 : 1); i < 365; i++) {
+        const checkDate = new Date(now.getTime() - (now.getTimezoneOffset() * 60 * 1000));
+        checkDate.setDate(checkDate.getDate() - i);
+        const dateStr = checkDate.toISOString().split('T')[0];
         
         const result = await db.getFirstAsync<{ count: number }>(
           'SELECT COUNT(*) as count FROM food_entries WHERE date = ?',
@@ -47,20 +64,18 @@ export function useWeeklyStats() {
         
         if (result && result.count > 0) {
           currentStreak++;
-          checkDate.setDate(checkDate.getDate() - 1);
+        } else if (missesAllowed > 0) {
+          // Used grace day for a past date
+          missesAllowed--;
+          // We don't set isFrozenStatus to true here because the user has already "saved" the streak by logging today
         } else {
-          // If it's today and no logs, streak might still be alive from yesterday
-          const isToday = dateStr === new Date().toISOString().split('T')[0];
-          if (isToday) {
-             checkDate.setDate(checkDate.getDate() - 1);
-             continue; // Check yesterday
-          }
+          // Streak broken
           break;
         }
-        
-        if (currentStreak > 365) break; // Safety break
       }
+      
       setStreak(currentStreak);
+      setIsFrozenState(isFrozenStatus);
 
     } catch (error) {
       console.error('Error fetching weekly stats:', error);
@@ -73,5 +88,5 @@ export function useWeeklyStats() {
     }, [fetchStats])
   );
 
-  return { weeklyCalories, streak, refreshStats: fetchStats };
+  return { weeklyCalories, streak, isFrozen, refreshStats: fetchStats };
 }

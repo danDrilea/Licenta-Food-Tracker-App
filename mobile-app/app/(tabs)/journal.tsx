@@ -1,5 +1,6 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { StyleSheet, View, ScrollView } from 'react-native';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import DateStrip from '../../components/journal/DateStrip';
 import DailyMacroSummary from '../../components/journal/DailyMacroSummary';
 import MealSection, { MealData } from '../../components/journal/MealSection';
@@ -10,9 +11,35 @@ import { useFoodLogs } from '../../hooks/useFoodLogs';
 import { useDailyLogs } from '../../hooks/useDailyLogs';
 
 export default function JournalScreen() {
+  const params = useLocalSearchParams();
+  const router = useRouter();
+  const scrollViewRef = useRef<ScrollView>(null);
+  const mealPositions = useRef<Record<string, number>>({});
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [addingFoodToMeal, setAddingFoodToMeal] = useState<{id: string, name: string} | null>(null);
   const { settings } = useSettings();
+
+  // Handle navigation from Dashboard
+  useEffect(() => {
+    if (params.selectedMealId) {
+      const mealId = params.selectedMealId as string;
+      const meal = settings.meals.find(m => m.id === mealId);
+      if (meal) {
+        setSelectedDate(new Date()); // Ensure we are on "Today"
+        
+        // Wait a bit for layout to settle, then scroll
+        setTimeout(() => {
+          const y = mealPositions.current[mealId];
+          if (y !== undefined && scrollViewRef.current) {
+            scrollViewRef.current.scrollTo({ y, animated: true });
+          }
+        }, 100);
+        
+        // Clear the param
+        router.setParams({ selectedMealId: '' });
+      }
+    }
+  }, [params.selectedMealId, settings.meals, router]);
   
   // Format date as YYYY-MM-DD local time to avoid timezone shifts
   const dateStr = useMemo(() => {
@@ -21,8 +48,9 @@ export default function JournalScreen() {
     return localDate.toISOString().split('T')[0];
   }, [selectedDate]);
 
-  const { logs, addFoodLog } = useFoodLogs(dateStr);
+  const { logs, addFoodLog, updateFoodLog, deleteFoodLog } = useFoodLogs(dateStr);
   const { waterGlasses, setWaterGlasses } = useDailyLogs(dateStr);
+  const [editingFoodItem, setEditingFoodItem] = useState<any | null>(null);
 
   // Group logs by meal_id
   const logsByMeal = useMemo(() => {
@@ -68,6 +96,7 @@ export default function JournalScreen() {
       <DateStrip selectedDate={selectedDate} onDateChange={setSelectedDate} />
 
       <ScrollView
+        ref={scrollViewRef}
         style={styles.scrollView}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
@@ -83,11 +112,21 @@ export default function JournalScreen() {
         {/* Meal sections */}
         <View style={styles.mealsContainer}>
           {meals.map((meal) => (
-            <MealSection
-              key={meal.id}
-              meal={meal}
-              onAddFood={() => setAddingFoodToMeal({ id: meal.id, name: meal.name })}
-            />
+            <View 
+              key={meal.id} 
+              onLayout={(e) => {
+                mealPositions.current[meal.id] = e.nativeEvent.layout.y;
+              }}
+            >
+              <MealSection
+                meal={meal}
+                onAddFood={() => setAddingFoodToMeal({ id: meal.id, name: meal.name })}
+                onEditFood={(item) => {
+                  setEditingFoodItem(item);
+                  setAddingFoodToMeal({ id: meal.id, name: meal.name });
+                }}
+              />
+            </View>
           ))}
         </View>
 
@@ -104,18 +143,31 @@ export default function JournalScreen() {
         <View style={styles.bottomSpacer} />
       </ScrollView>
 
-      {/* Add Food Modal */}
+      {/* Add/Edit Food Modal */}
       <AddFoodModal
         visible={addingFoodToMeal !== null}
         mealName={addingFoodToMeal?.name ?? ''}
-        onClose={() => setAddingFoodToMeal(null)}
+        initialData={editingFoodItem}
+        onClose={() => {
+          setAddingFoodToMeal(null);
+          setEditingFoodItem(null);
+        }}
+        onDelete={(id) => deleteFoodLog(id)}
         onSave={(food) => {
           if (addingFoodToMeal) {
-            addFoodLog({
-              meal_id: addingFoodToMeal.id,
-              date: dateStr,
-              ...food
-            });
+            if (editingFoodItem) {
+              updateFoodLog(editingFoodItem.id, {
+                meal_id: addingFoodToMeal.id,
+                date: dateStr,
+                ...food
+              });
+            } else {
+              addFoodLog({
+                meal_id: addingFoodToMeal.id,
+                date: dateStr,
+                ...food
+              });
+            }
           }
         }}
       />

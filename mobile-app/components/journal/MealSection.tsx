@@ -22,9 +22,10 @@ export interface MealData {
 interface MealSectionProps {
   meal: MealData;
   onAddFood?: () => void;
+  onEditFood?: (item: FoodItem) => void;
 }
 
-export default function MealSection({ meal, onAddFood }: MealSectionProps) {
+export default function MealSection({ meal, onAddFood, onEditFood }: MealSectionProps) {
   const totalCalories = meal.items.reduce((sum, item) => sum + item.calories, 0);
   const hasItems = meal.items.length > 0;
 
@@ -48,22 +49,27 @@ export default function MealSection({ meal, onAddFood }: MealSectionProps) {
       {hasItems ? (
         <View style={styles.itemsList}>
           {meal.items.map((item, index) => (
-            <View
+            <Pressable
               key={item.id}
-              style={[
+              style={({ pressed }) => [
                 styles.foodItem,
                 index < meal.items.length - 1 && styles.foodItemBorder,
+                pressed && styles.foodItemPressed,
               ]}
+              onPress={() => onEditFood?.(item)}
             >
               <View style={styles.foodInfo}>
                 <Text style={styles.foodName}>{item.name}</Text>
                 <Text style={styles.foodAmount}>{item.amount}</Text>
               </View>
               <View style={styles.foodRight}>
-                <Text style={styles.foodCalories}>{item.calories}</Text>
-                <Text style={styles.foodCalUnit}>kcal</Text>
+                <View style={styles.calCol}>
+                  <Text style={styles.foodCalories}>{item.calories}</Text>
+                  <Text style={styles.foodCalUnit}>kcal</Text>
+                </View>
+                <Ionicons name="create-outline" size={16} color="#c77ffb" style={styles.editIcon} />
               </View>
-            </View>
+            </Pressable>
           ))}
         </View>
       ) : (
@@ -133,7 +139,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingVertical: 12,
-    paddingLeft: 44, // aligns with text after icon
+    paddingHorizontal: 12,
+    marginHorizontal: 8,
+    borderRadius: 12,
+  },
+  foodItemPressed: {
+    backgroundColor: 'rgba(199, 127, 251, 0.1)',
   },
   foodItemBorder: {
     borderBottomWidth: 1,
@@ -155,13 +166,20 @@ const styles = StyleSheet.create({
   },
   foodRight: {
     flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: 3,
+    alignItems: 'center',
+    gap: 8,
+  },
+  calCol: {
+    alignItems: 'flex-end',
   },
   foodCalories: {
     color: '#ffffff',
     fontSize: 15,
     fontWeight: '600',
+  },
+  editIcon: {
+    marginLeft: 10,
+    opacity: 0.8,
   },
   foodCalUnit: {
     color: '#6b7280',

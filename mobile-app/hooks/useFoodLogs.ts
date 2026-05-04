@@ -50,6 +50,18 @@ export function useFoodLogs(dateStr: string) {
     }
   };
 
+  const updateFoodLog = async (id: string, entry: Omit<FoodEntry, 'id'>) => {
+    try {
+      await db.runAsync(
+        'UPDATE food_entries SET meal_id = ?, date = ?, name = ?, amount = ?, calories = ?, protein = ?, carbs = ?, fat = ? WHERE id = ?',
+        [entry.meal_id, entry.date, entry.name, entry.amount, entry.calories, entry.protein, entry.carbs, entry.fat, id]
+      );
+      await fetchLogs();
+    } catch (error) {
+      console.error('Error updating food log:', error);
+    }
+  };
+
   const deleteFoodLog = async (id: string) => {
     try {
       await db.runAsync('DELETE FROM food_entries WHERE id = ?', [id]);
@@ -62,6 +74,7 @@ export function useFoodLogs(dateStr: string) {
   return {
     logs,
     addFoodLog,
+    updateFoodLog,
     deleteFoodLog,
     refreshLogs: fetchLogs,
   };

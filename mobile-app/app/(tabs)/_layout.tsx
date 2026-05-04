@@ -1,4 +1,4 @@
-import { Tabs } from 'expo-router';
+import { Tabs, useRouter } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useState } from 'react';
 import { View, Text, StyleSheet, Pressable, Modal, Image } from 'react-native';
@@ -13,6 +13,7 @@ const MENU_OPTIONS = [
 const triangleImg = require('../../assets/images/cool-triangle.webp');
 
 export default function TabLayout() {
+  const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
@@ -121,8 +122,11 @@ export default function TabLayout() {
                 ]}
                 onPress={() => {
                   setMenuOpen(false);
-                  // TODO: handle each action
-                  console.log(option.label);
+                  if (option.label === 'Log Weight') {
+                    router.push('/log-weight');
+                  } else {
+                    console.log(option.label);
+                  }
                 }}
               >
                 <View style={styles.menuIconCircle}>

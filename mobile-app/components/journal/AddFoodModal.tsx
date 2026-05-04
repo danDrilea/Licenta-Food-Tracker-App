@@ -1,21 +1,52 @@
-import React, { useState } from 'react';
-import { StyleSheet, View, Text, Modal, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { StyleSheet, View, Text, Modal, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+
+interface FoodData {
+  name: string;
+  amount: string;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+}
 
 interface AddFoodModalProps {
   visible: boolean;
   mealName: string;
+  initialData?: FoodData & { id?: string };
   onClose: () => void;
-  onSave: (food: { name: string; amount: string; calories: number; protein: number; carbs: number; fat: number }) => void;
+  onSave: (food: FoodData) => void;
+  onDelete?: (id: string) => void;
 }
 
-export default function AddFoodModal({ visible, mealName, onClose, onSave }: AddFoodModalProps) {
+export default function AddFoodModal({ visible, mealName, initialData, onClose, onSave, onDelete }: AddFoodModalProps) {
   const [name, setName] = useState('');
   const [amount, setAmount] = useState('');
   const [calories, setCalories] = useState('');
   const [protein, setProtein] = useState('');
   const [carbs, setCarbs] = useState('');
   const [fat, setFat] = useState('');
+
+  useEffect(() => {
+    if (visible) {
+      if (initialData) {
+        setName(initialData.name);
+        setAmount(initialData.amount);
+        setCalories(initialData.calories.toString());
+        setProtein(initialData.protein.toString());
+        setCarbs(initialData.carbs.toString());
+        setFat(initialData.fat.toString());
+      } else {
+        setName('');
+        setAmount('');
+        setCalories('');
+        setProtein('');
+        setCarbs('');
+        setFat('');
+      }
+    }
+  }, [visible, initialData]);
 
   const handleSave = () => {
     if (!name.trim() || !calories.trim()) return;
@@ -29,15 +60,30 @@ export default function AddFoodModal({ visible, mealName, onClose, onSave }: Add
       fat: parseFloat(fat) || 0,
     });
 
-    // Reset form
-    setName('');
-    setAmount('');
-    setCalories('');
-    setProtein('');
-    setCarbs('');
-    setFat('');
     onClose();
   };
+
+  const handleDelete = () => {
+    if (!initialData?.id) return;
+    
+    Alert.alert(
+      'Delete Item',
+      'Are you sure you want to remove this food log?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Delete', 
+          style: 'destructive',
+          onPress: () => {
+            onDelete?.(initialData.id!);
+            onClose();
+          }
+        },
+      ]
+    );
+  };
+
+  const isEditing = !!initialData;
 
   return (
     <Modal visible={visible} animationType="slide" transparent>
@@ -47,7 +93,7 @@ export default function AddFoodModal({ visible, mealName, onClose, onSave }: Add
       >
         <View style={styles.modalContent}>
           <View style={styles.header}>
-            <Text style={styles.title}>Add to {mealName}</Text>
+            <Text style={styles.title}>{isEditing ? 'Edit' : 'Add to'} {mealName}</Text>
             <TouchableOpacity onPress={onClose} hitSlop={10}>
               <Ionicons name="close" size={24} color="#9ca3af" />
             </TouchableOpacity>
@@ -126,13 +172,27 @@ export default function AddFoodModal({ visible, mealName, onClose, onSave }: Add
               </View>
             </View>
 
-            <TouchableOpacity 
-              style={[styles.saveButton, (!name.trim() || !calories.trim()) && styles.saveButtonDisabled]} 
-              onPress={handleSave}
-              disabled={!name.trim() || !calories.trim()}
-            >
-              <Text style={styles.saveButtonText}>Add Food</Text>
-            </TouchableOpacity>
+            <View style={styles.buttonRow}>
+              {isEditing && (
+                <TouchableOpacity 
+                  style={[styles.deleteButton]} 
+                  onPress={handleDelete}
+                >
+                  <Ionicons name="trash-outline" size={20} color="#ef4444" />
+                </TouchableOpacity>
+              )}
+              <TouchableOpacity 
+                style={[
+                  styles.saveButton, 
+                  isEditing && { flex: 1, marginTop: 0 },
+                  (!name.trim() || !calories.trim()) && styles.saveButtonDisabled
+                ]} 
+                onPress={handleSave}
+                disabled={!name.trim() || !calories.trim()}
+              >
+                <Text style={styles.saveButtonText}>{isEditing ? 'Save Changes' : 'Add Food'}</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </KeyboardAvoidingView>
@@ -190,13 +250,28 @@ const styles = StyleSheet.create({
     height: 48,
     fontSize: 16,
   },
+  buttonRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginTop: 16,
+  },
+  deleteButton: {
+    width: 52,
+    height: 52,
+    borderRadius: 12,
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.2)',
+  },
   saveButton: {
     backgroundColor: '#38bdf8',
     height: 52,
     borderRadius: 26,
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 16,
   },
   saveButtonDisabled: {
     backgroundColor: '#374151',

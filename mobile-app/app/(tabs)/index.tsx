@@ -10,6 +10,7 @@ import { useSettings } from '../../contexts/SettingsContext';
 import { useFoodLogs } from '../../hooks/useFoodLogs';
 import { useDailyLogs } from '../../hooks/useDailyLogs';
 import { useWeeklyStats } from '../../hooks/useWeeklyStats';
+import { useRouter } from 'expo-router';
 import type { DashboardMealData } from '../../components/dashboard/MealSummary';
 
 function getGreeting(): string {
@@ -29,6 +30,7 @@ function getFormattedDate(): string {
 
 export default function DashboardScreen() {
   const { settings } = useSettings();
+  const router = useRouter();
   
   // Format today's date local time
   const todayStr = useMemo(() => {
@@ -40,7 +42,7 @@ export default function DashboardScreen() {
 
   const { logs } = useFoodLogs(todayStr);
   const { waterGlasses, setWaterGlasses } = useDailyLogs(todayStr);
-  const { weeklyCalories, streak } = useWeeklyStats();
+  const { weeklyCalories, streak, isFrozen } = useWeeklyStats();
 
   // Group logs by meal_id
   const logsByMeal = useMemo(() => {
@@ -119,8 +121,7 @@ export default function DashboardScreen() {
         <MealSummary
           meals={meals}
           onMealPress={(meal) => {
-            // TODO: navigate to journal tab with this meal focused
-            console.log(`Navigate to journal → ${meal.name} (id: ${meal.id})`);
+            router.push({ pathname: '/journal', params: { selectedMealId: meal.id } });
           }}
         />
       </View>
@@ -136,7 +137,7 @@ export default function DashboardScreen() {
 
       {/* ─── 5. Streak ─── */}
       <View style={styles.section}>
-        <StreakCounter days={streak} />
+        <StreakCounter days={streak} isFrozen={isFrozen} />
       </View>
 
       {/* ─── 6. Weekly Overview ─── */}
