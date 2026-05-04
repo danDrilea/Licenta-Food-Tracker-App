@@ -26,9 +26,14 @@ const GOAL_COLORS: Record<string, string> = {
 export default function GoalSection({ goal, currentWeight, onEditPress }: GoalSectionProps) {
   const color = GOAL_COLORS[goal.type];
   const icon = GOAL_ICONS[goal.type];
+  const isGaining = goal.type === 'weight_gain';
+  const reachedGoal = isGaining ? currentWeight >= (goal.targetWeight || 0) : currentWeight <= (goal.targetWeight || 999);
+  
   const diff = goal.targetWeight
     ? Math.abs(goal.targetWeight - currentWeight).toFixed(1)
     : null;
+
+  const diffText = reachedGoal ? 'Goal reached!' : `(${diff} kg to go)`;
 
   return (
     <View style={styles.container}>
@@ -52,8 +57,7 @@ export default function GoalSection({ goal, currentWeight, onEditPress }: GoalSe
 
             {goal.targetWeight != null && (
               <Text style={styles.targetText}>
-                Target: {goal.targetWeight} kg
-                {diff ? ` (${diff} kg to go)` : ''}
+                Target: {goal.targetWeight} kg {diffText}
               </Text>
             )}
 

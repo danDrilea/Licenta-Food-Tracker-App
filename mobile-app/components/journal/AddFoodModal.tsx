@@ -203,7 +203,7 @@ export default function AddFoodModal({ visible, mealName, initialData, onClose, 
 const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
     justifyContent: 'flex-end',
   },
   modalContent: {
@@ -267,9 +267,9 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(239, 68, 68, 0.2)',
   },
   saveButton: {
-    backgroundColor: '#38bdf8',
+    backgroundColor: '#8b5cf6',
     height: 52,
-    borderRadius: 26,
+    borderRadius: 28,
     justifyContent: 'center',
     alignItems: 'center',
   },

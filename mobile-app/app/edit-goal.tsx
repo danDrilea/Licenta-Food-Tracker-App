@@ -52,14 +52,9 @@ export default function EditGoalScreen() {
             <Ionicons name="close" size={24} color="#ffffff" />
           </TouchableOpacity>
         ),
-        headerRight: () => (
-          <TouchableOpacity onPress={handleSave}>
-            <Text style={styles.saveBtn}>Save</Text>
-          </TouchableOpacity>
-        )
       }} />
 
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
         <Text style={styles.sectionLabel}>CHOOSE YOUR GOAL</Text>
         <View style={styles.grid}>
           {GOAL_OPTIONS.map((opt) => (

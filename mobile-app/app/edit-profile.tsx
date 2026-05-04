@@ -39,18 +39,13 @@ interface WheelPickerProps {
 
 function WheelPicker({ data, selectedValue, onValueChange, label }: WheelPickerProps) {
   const flatListRef = useRef<FlatList>(null);
-  
-  // Padding items to allow first/last items to be centered
   const extendedData = useMemo(() => [0, 0, ...data, 0, 0], [data]);
 
   useEffect(() => {
     const index = data.indexOf(selectedValue);
     if (index !== -1) {
       setTimeout(() => {
-        flatListRef.current?.scrollToOffset({
-          offset: index * ITEM_HEIGHT,
-          animated: false,
-        });
+        flatListRef.current?.scrollToOffset({ offset: index * ITEM_HEIGHT, animated: false });
       }, 100);
     }
   }, []);
@@ -76,22 +71,16 @@ function WheelPicker({ data, selectedValue, onValueChange, label }: WheelPickerP
           snapToInterval={ITEM_HEIGHT}
           decelerationRate="fast"
           onMomentumScrollEnd={onMomentumScrollEnd}
-          renderItem={({ item, index }) => {
+          renderItem={({ item }) => {
             if (item === 0) return <View style={{ height: ITEM_HEIGHT }} />;
             const isSelected = item === selectedValue;
             return (
               <View style={styles.wheelItem}>
-                <Text style={[styles.wheelItemText, isSelected && styles.wheelItemTextActive]}>
-                  {item}
-                </Text>
+                <Text style={[styles.wheelItemText, isSelected && styles.wheelItemTextActive]}>{item}</Text>
               </View>
             );
           }}
-          getItemLayout={(_, index) => ({
-            length: ITEM_HEIGHT,
-            offset: ITEM_HEIGHT * index,
-            index,
-          })}
+          getItemLayout={(_, index) => ({ length: ITEM_HEIGHT, offset: ITEM_HEIGHT * index, index })}
         />
       </View>
     </View>
@@ -102,7 +91,6 @@ export default function EditProfileScreen() {
   const router = useRouter();
   const { profile, updateProfile } = useProfile();
 
-  // Form state
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [dob, setDob] = useState('');
@@ -111,23 +99,19 @@ export default function EditProfileScreen() {
   const [heightCm, setHeightCm] = useState('');
   const [activityLevel, setActivityLevel] = useState<ActivityLevel>('moderately_active');
   
-  // UI State
   const [showActivityPicker, setShowActivityPicker] = useState(false);
   const [showCountryPicker, setShowCountryPicker] = useState(false);
   const [countrySearch, setCountrySearch] = useState('');
   const [showDatePicker, setShowDatePicker] = useState(false);
 
-  // Temporary date state for picker
   const [tempDay, setTempDay] = useState(1);
   const [tempMonth, setTempMonth] = useState(1);
   const [tempYear, setTempYear] = useState(1990);
 
-  // Date constants
   const days = useMemo(() => Array.from({ length: 31 }, (_, i) => i + 1), []);
   const months = useMemo(() => Array.from({ length: 12 }, (_, i) => i + 1), []);
   const years = useMemo(() => Array.from({ length: 100 }, (_, i) => new Date().getFullYear() - i), []);
 
-  // Load profile data into state
   useEffect(() => {
     if (profile) {
       setFirstName(profile.firstName);
@@ -138,7 +122,6 @@ export default function EditProfileScreen() {
       setHeightCm(profile.heightCm.toString());
       setActivityLevel(profile.activityLevel);
 
-      // Parse DOB for picker
       const [y, m, d] = profile.dateOfBirth.split('-').map(Number);
       if (y && m && d) {
         setTempYear(y);
@@ -154,15 +137,9 @@ export default function EditProfileScreen() {
 
   const handleSave = async () => {
     if (!firstName.trim() || !lastName.trim()) return;
-
     await updateProfile({
-      firstName,
-      lastName,
-      dateOfBirth: dob,
-      country,
-      sex,
-      heightCm: parseFloat(heightCm) || 175,
-      activityLevel
+      firstName, lastName, dateOfBirth: dob, country, sex,
+      heightCm: parseFloat(heightCm) || 175, activityLevel
     });
     router.back();
   };
@@ -187,68 +164,42 @@ export default function EditProfileScreen() {
             <Ionicons name="close" size={24} color="#ffffff" />
           </TouchableOpacity>
         ),
-        headerRight: () => (
-          <TouchableOpacity 
-            onPress={handleSave}
-            disabled={!firstName.trim() || !lastName.trim()}
-          >
-            <Text style={[styles.saveBtn, (!firstName.trim() || !lastName.trim()) && styles.saveBtnDisabled]}>
-              Save
-            </Text>
-          </TouchableOpacity>
-        )
       }} />
 
       <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
-        {/* Profile Card */}
-        <View style={styles.profileCard}>
-          <View style={styles.avatarPlaceholder}>
-             <Ionicons name="person" size={40} color="#8b5cf6" />
-          </View>
-          <View style={styles.profileInfo}>
-            <Text style={styles.profileName}>{firstName || 'First'} {lastName || 'Last'}</Text>
-            <Text style={styles.profileSub}>Profile details are used for health calculations</Text>
+        {/* Name */}
+        <Text style={styles.sectionLabel}>NAME</Text>
+        <View style={styles.inputCard}>
+          <View style={styles.inputRow}>
+            <View style={styles.inputWrapper}>
+              <Text style={styles.fieldLabel}>First Name</Text>
+              <TextInput style={styles.input} value={firstName} onChangeText={setFirstName}
+                placeholder="First Name" placeholderTextColor="#4b5563" />
+            </View>
+            <View style={styles.inputWrapper}>
+              <Text style={styles.fieldLabel}>Last Name</Text>
+              <TextInput style={styles.input} value={lastName} onChangeText={setLastName}
+                placeholder="Last Name" placeholderTextColor="#4b5563" />
+            </View>
           </View>
         </View>
 
-        {/* Section: Identity */}
-        <Text style={styles.sectionTitle}>Identity</Text>
-        <View style={styles.inputGroup}>
-          <View style={styles.rowInputs}>
-            <View style={[styles.inputBox, { flex: 1 }]}>
-              <Text style={styles.inputLabel}>First Name</Text>
-              <TextInput
-                style={styles.textInput}
-                value={firstName}
-                onChangeText={setFirstName}
-                placeholder="First Name"
-                placeholderTextColor="#4b5563"
-              />
-            </View>
-            <View style={[styles.inputBox, { flex: 1 }]}>
-              <Text style={styles.inputLabel}>Last Name</Text>
-              <TextInput
-                style={styles.textInput}
-                value={lastName}
-                onChangeText={setLastName}
-                placeholder="Last Name"
-                placeholderTextColor="#4b5563"
-              />
-            </View>
-          </View>
-
-          <View style={styles.rowInputs}>
-            <Pressable style={[styles.inputBox, { flex: 1 }]} onPress={() => setShowDatePicker(true)}>
-              <Text style={styles.inputLabel}>Date of Birth</Text>
-              <View style={styles.selectorRow}>
-                <Text style={[styles.selectorText, !dob && styles.placeholder]}>{dob || 'Select Date'}</Text>
+        {/* Personal Info */}
+        <View style={styles.section}>
+          <Text style={styles.sectionLabel}>PERSONAL INFO</Text>
+          <View style={styles.inputCard}>
+            <Pressable style={styles.fieldRow} onPress={() => setShowDatePicker(true)}>
+              <Text style={styles.fieldLabel}>Date of Birth</Text>
+              <View style={styles.fieldValueRow}>
+                <Text style={[styles.fieldValue, !dob && styles.placeholder]}>{dob || 'Select Date'}</Text>
                 <Ionicons name="calendar-outline" size={16} color="#8b5cf6" />
               </View>
             </Pressable>
-            <Pressable style={[styles.inputBox, { flex: 1 }]} onPress={() => setShowCountryPicker(true)}>
-              <Text style={styles.inputLabel}>Country</Text>
-              <View style={styles.selectorRow}>
-                <Text style={[styles.selectorText, !country && styles.placeholder]} numberOfLines={1}>
+            <View style={styles.fieldDivider} />
+            <Pressable style={styles.fieldRow} onPress={() => setShowCountryPicker(true)}>
+              <Text style={styles.fieldLabel}>Country</Text>
+              <View style={styles.fieldValueRow}>
+                <Text style={[styles.fieldValue, !country && styles.placeholder]} numberOfLines={1}>
                   {country || 'Select Country'}
                 </Text>
                 <Ionicons name="chevron-down" size={16} color="#8b5cf6" />
@@ -257,51 +208,49 @@ export default function EditProfileScreen() {
           </View>
         </View>
 
-        {/* Section: Body Details */}
-        <Text style={styles.sectionTitle}>Body Details</Text>
-        <View style={styles.inputGroup}>
-          <View style={styles.rowInputs}>
-            <View style={[styles.inputBox, { flex: 1 }]}>
-              <Text style={styles.inputLabel}>Height (cm)</Text>
-              <TextInput
-                style={styles.textInput}
-                value={heightCm}
-                onChangeText={setHeightCm}
-                keyboardType="numeric"
-                placeholder="175"
-                placeholderTextColor="#4b5563"
-              />
-            </View>
-            <View style={[styles.inputBox, { flex: 1.2 }]}>
-              <Text style={styles.inputLabel}>Sex</Text>
-              <View style={styles.pillToggle}>
-                <Pressable 
-                  style={[styles.pill, sex === 'male' && styles.pillActive]} 
-                  onPress={() => setSex('male')}
-                >
-                  <Text style={[styles.pillText, sex === 'male' && styles.pillTextActive]}>Male</Text>
-                </Pressable>
-                <Pressable 
-                  style={[styles.pill, sex === 'female' && styles.pillActive]} 
-                  onPress={() => setSex('female')}
-                >
-                  <Text style={[styles.pillText, sex === 'female' && styles.pillTextActive]}>Female</Text>
-                </Pressable>
-              </View>
+        {/* Sex */}
+        <View style={styles.section}>
+          <Text style={styles.sectionLabel}>SEX</Text>
+          <View style={styles.segmentedControl}>
+            <Pressable style={[styles.segment, sex === 'male' && styles.segmentActive]} onPress={() => setSex('male')}>
+              <Ionicons name="male" size={18} color={sex === 'male' ? '#ffffff' : '#9ca3af'} />
+              <Text style={[styles.segmentText, sex === 'male' && styles.segmentTextActive]}>Male</Text>
+            </Pressable>
+            <Pressable style={[styles.segment, sex === 'female' && styles.segmentActive]} onPress={() => setSex('female')}>
+              <Ionicons name="female" size={18} color={sex === 'female' ? '#ffffff' : '#9ca3af'} />
+              <Text style={[styles.segmentText, sex === 'female' && styles.segmentTextActive]}>Female</Text>
+            </Pressable>
+          </View>
+        </View>
+
+        {/* Body */}
+        <View style={styles.section}>
+          <Text style={styles.sectionLabel}>BODY DETAILS</Text>
+          <View style={styles.inputCard}>
+            <View style={styles.fieldRow}>
+              <Text style={styles.fieldLabel}>Height (cm)</Text>
+              <TextInput style={styles.fieldInput} value={heightCm} onChangeText={setHeightCm}
+                keyboardType="numeric" placeholder="175" placeholderTextColor="#4b5563" />
             </View>
           </View>
+        </View>
 
-          <Pressable style={styles.inputBox} onPress={() => setShowActivityPicker(true)}>
-            <Text style={styles.inputLabel}>Activity Level</Text>
-            <View style={styles.selectorRow}>
-              <Text style={styles.selectorText}>{ACTIVITY_LABELS[activityLevel]}</Text>
-              <Ionicons name="flash-outline" size={16} color="#8b5cf6" />
+        {/* Activity Level */}
+        <View style={styles.section}>
+          <Text style={styles.sectionLabel}>ACTIVITY LEVEL</Text>
+          <Pressable style={styles.inputCard} onPress={() => setShowActivityPicker(true)}>
+            <View style={styles.fieldRow}>
+              <Text style={styles.fieldLabel}>Daily Activity</Text>
+              <View style={styles.fieldValueRow}>
+                <Text style={styles.fieldValue}>{ACTIVITY_LABELS[activityLevel]}</Text>
+                <Ionicons name="chevron-forward" size={16} color="#8b5cf6" />
+              </View>
             </View>
           </Pressable>
         </View>
 
         <TouchableOpacity 
-          style={[styles.bottomSaveBtn, (!firstName.trim() || !lastName.trim()) && styles.saveBtnDisabled]}
+          style={[styles.bottomSaveBtn, (!firstName.trim() || !lastName.trim()) && styles.bottomSaveBtnDisabled]}
           onPress={handleSave}
           disabled={!firstName.trim() || !lastName.trim()}
         >
@@ -321,34 +270,21 @@ export default function EditProfileScreen() {
                 <Ionicons name="close" size={24} color="#ffffff" />
               </Pressable>
             </View>
-            
             <View style={styles.searchBar}>
               <Ionicons name="search" size={18} color="#6b7280" />
-              <TextInput
-                style={styles.searchInput}
-                placeholder="Search country..."
-                placeholderTextColor="#6b7280"
-                value={countrySearch}
-                onChangeText={setCountrySearch}
-                autoFocus
-              />
+              <TextInput style={styles.searchInput} placeholder="Search country..."
+                placeholderTextColor="#6b7280" value={countrySearch}
+                onChangeText={setCountrySearch} autoFocus />
             </View>
-
             <FlatList
               data={filteredCountries}
               keyExtractor={(item) => item}
               renderItem={({ item }) => (
                 <Pressable 
                   style={[styles.modalItem, country === item && styles.modalItemActive]}
-                  onPress={() => {
-                    setCountry(item);
-                    setShowCountryPicker(false);
-                    setCountrySearch('');
-                  }}
+                  onPress={() => { setCountry(item); setShowCountryPicker(false); setCountrySearch(''); }}
                 >
-                  <Text style={[styles.modalItemText, country === item && styles.modalItemTextActive]}>
-                    {item}
-                  </Text>
+                  <Text style={[styles.modalItemText, country === item && styles.modalItemTextActive]}>{item}</Text>
                   {country === item && <Ionicons name="checkmark" size={20} color="#8b5cf6" />}
                 </Pressable>
               )}
@@ -373,10 +309,7 @@ export default function EditProfileScreen() {
                 <Pressable 
                   key={level} 
                   style={[styles.modalItem, activityLevel === level && styles.modalItemActive]}
-                  onPress={() => {
-                    setActivityLevel(level);
-                    setShowActivityPicker(false);
-                  }}
+                  onPress={() => { setActivityLevel(level); setShowActivityPicker(false); }}
                 >
                   <Text style={[styles.modalItemText, activityLevel === level && styles.modalItemTextActive]}>
                     {ACTIVITY_LABELS[level]}
@@ -389,41 +322,24 @@ export default function EditProfileScreen() {
         </Pressable>
       </Modal>
 
-      {/* Date Picker Modal (Custom Wheel) */}
+      {/* Date Picker Modal (Wheel) */}
       <Modal visible={showDatePicker} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, { height: 420 }]}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Birth Date</Text>
               <TouchableOpacity onPress={() => setShowDatePicker(false)}>
-                <Text style={styles.dateCancel}>Cancel</Text>
+                <Text style={styles.cancelText}>Cancel</Text>
               </TouchableOpacity>
             </View>
-            
             <View style={styles.wheelsRow}>
-              <WheelPicker 
-                data={days} 
-                selectedValue={tempDay} 
-                onValueChange={setTempDay} 
-                label="Day"
-              />
-              <WheelPicker 
-                data={months} 
-                selectedValue={tempMonth} 
-                onValueChange={setTempMonth} 
-                label="Month"
-              />
-              <WheelPicker 
-                data={years} 
-                selectedValue={tempYear} 
-                onValueChange={setTempYear} 
-                label="Year"
-              />
+              <WheelPicker data={days} selectedValue={tempDay} onValueChange={setTempDay} label="Day" />
+              <WheelPicker data={months} selectedValue={tempMonth} onValueChange={setTempMonth} label="Month" />
+              <WheelPicker data={years} selectedValue={tempYear} onValueChange={setTempYear} label="Year" />
             </View>
-
             <View style={{ padding: 24, paddingBottom: 40 }}>
-              <TouchableOpacity onPress={confirmDate} style={styles.dateConfirmBtn}>
-                <Text style={styles.dateConfirmText}>Confirm Date</Text>
+              <TouchableOpacity onPress={confirmDate} style={styles.bottomSaveBtn}>
+                <Text style={styles.bottomSaveBtnText}>Confirm Date</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -449,141 +365,131 @@ const styles = StyleSheet.create({
   saveBtnDisabled: {
     opacity: 0.5,
   },
-  profileCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#1e2126',
-    padding: 20,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#2a2d35',
-    marginBottom: 24,
-    gap: 16,
+  // Section layout — matches edit-goal
+  section: {
+    marginTop: 24,
   },
-  avatarPlaceholder: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: 'rgba(139, 92, 246, 0.1)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  profileInfo: {
-    flex: 1,
-  },
-  profileName: {
-    color: '#ffffff',
-    fontSize: 18,
-    fontWeight: '700',
-    marginBottom: 2,
-  },
-  profileSub: {
-    color: '#6b7280',
+  sectionLabel: {
+    color: '#9ca3af',
     fontSize: 12,
-    fontWeight: '500',
-  },
-  sectionTitle: {
-    color: '#ffffff',
-    fontSize: 13,
-    fontWeight: '800',
-    textTransform: 'uppercase',
+    fontWeight: '700',
     letterSpacing: 1,
     marginBottom: 12,
-    marginTop: 8,
-    marginLeft: 4,
   },
-  inputGroup: {
+  // Input cards — matches edit-goal
+  inputCard: {
     backgroundColor: '#1e2126',
-    borderRadius: 20,
+    borderRadius: 16,
+    padding: 16,
     borderWidth: 1,
     borderColor: '#2a2d35',
-    padding: 12,
-    gap: 12,
-    marginBottom: 24,
   },
-  rowInputs: {
+  inputRow: {
     flexDirection: 'row',
     gap: 12,
   },
-  inputBox: {
-    backgroundColor: '#25292e',
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: '#374151',
-    padding: 12,
+  inputWrapper: {
+    flex: 1,
   },
-  inputLabel: {
-    color: '#8b5cf6',
-    fontSize: 10,
-    fontWeight: '700',
+  fieldLabel: {
+    color: '#6b7280',
+    fontSize: 11,
+    fontWeight: '600',
     textTransform: 'uppercase',
     marginBottom: 6,
   },
-  textInput: {
+  input: {
     color: '#ffffff',
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: 16,
+    fontWeight: '500',
     height: 24,
     padding: 0,
   },
-  selectorRow: {
+  fieldRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    height: 24,
+    justifyContent: 'space-between',
   },
-  selectorText: {
+  fieldValueRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  fieldValue: {
     color: '#ffffff',
     fontSize: 15,
     fontWeight: '600',
+  },
+  fieldInput: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '600',
+    textAlign: 'right',
+    height: 24,
+    padding: 0,
+    minWidth: 60,
+  },
+  fieldDivider: {
+    height: 1,
+    backgroundColor: '#2a2d35',
+    marginVertical: 14,
   },
   placeholder: {
     color: '#4b5563',
   },
-  pillToggle: {
+  // Segmented control — matches edit-goal
+  segmentedControl: {
     flexDirection: 'row',
     backgroundColor: '#1e2126',
-    borderRadius: 10,
-    padding: 2,
-    gap: 2,
+    borderRadius: 14,
+    padding: 4,
+    gap: 4,
   },
-  pill: {
+  segment: {
     flex: 1,
-    paddingVertical: 4,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 8,
+    paddingVertical: 12,
+    borderRadius: 10,
+    gap: 8,
   },
-  pillActive: {
+  segmentActive: {
     backgroundColor: '#8b5cf6',
   },
-  pillText: {
+  segmentText: {
     color: '#9ca3af',
-    fontSize: 13,
-    fontWeight: '700',
+    fontSize: 14,
+    fontWeight: '600',
   },
-  pillTextActive: {
+  segmentTextActive: {
     color: '#ffffff',
   },
+  // Bottom save — matches edit-goal
   bottomSaveBtn: {
     backgroundColor: '#8b5cf6',
     height: 56,
     borderRadius: 28,
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 12,
+    marginTop: 32,
     shadowColor: '#8b5cf6',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 4,
   },
+  bottomSaveBtnDisabled: {
+    backgroundColor: '#374151',
+    shadowOpacity: 0,
+    elevation: 0,
+  },
   bottomSaveBtnText: {
     color: '#ffffff',
     fontSize: 18,
     fontWeight: '700',
   },
-  // Modal Styles
+  // Modal styles
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.7)',
@@ -607,6 +513,11 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 20,
     fontWeight: '700',
+  },
+  cancelText: {
+    color: '#9ca3af',
+    fontSize: 15,
+    fontWeight: '600',
   },
   searchBar: {
     flexDirection: 'row',
@@ -651,7 +562,7 @@ const styles = StyleSheet.create({
     color: '#8b5cf6',
     fontWeight: '700',
   },
-  // Wheel Picker Styles
+  // Wheel Picker
   wheelsRow: {
     flexDirection: 'row',
     justifyContent: 'space-around',
@@ -699,22 +610,5 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 22,
     fontWeight: '800',
-  },
-  dateCancel: {
-    color: '#9ca3af',
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  dateConfirmBtn: {
-    backgroundColor: '#8b5cf6',
-    height: 56,
-    borderRadius: 28,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  dateConfirmText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '700',
   },
 });

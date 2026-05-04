@@ -14,8 +14,22 @@ export default function WeightProgress({ currentWeight, targetWeight, startWeigh
     ? Math.min(Math.max(Math.abs(currentWeight - start) / totalRange, 0), 1)
     : 0;
 
-  const remaining = Math.abs(targetWeight - currentWeight).toFixed(1);
   const isGaining = targetWeight > start;
+
+  // Determine if the user has reached or passed their goal
+  const reachedGoal = isGaining
+    ? currentWeight >= targetWeight
+    : currentWeight <= targetWeight;
+
+  const remaining = Math.abs(targetWeight - currentWeight).toFixed(1);
+
+  // Determine the correct action verb based on where the user actually needs to go
+  const getStatusText = () => {
+    if (reachedGoal) return 'Goal reached! 🎯';
+    
+    const needsToGain = targetWeight > currentWeight;
+    return `${remaining} kg to ${needsToGain ? 'gain' : 'lose'}`;
+  };
 
   return (
     <View style={styles.container}>
@@ -24,10 +38,10 @@ export default function WeightProgress({ currentWeight, targetWeight, startWeigh
       <View style={styles.card}>
         {/* Progress bar */}
         <View style={styles.barTrack}>
-          <View style={[styles.barFill, { width: `${progress * 100}%` }]} />
+          <View style={[styles.barFill, { width: `${Math.min(progress, 1) * 100}%`, backgroundColor: reachedGoal ? '#4ade80' : '#8b5cf6' }]} />
           {/* Current marker */}
-          <View style={[styles.marker, { left: `${progress * 100}%` }]}>
-            <View style={styles.markerDot} />
+          <View style={[styles.marker, { left: `${Math.min(progress, 1) * 100}%` }]}>
+            <View style={[styles.markerDot, reachedGoal && { backgroundColor: '#4ade80', borderColor: '#1e2126' }]} />
           </View>
         </View>
 
@@ -52,10 +66,18 @@ export default function WeightProgress({ currentWeight, targetWeight, startWeigh
         {/* Remaining */}
         <View style={styles.remainingRow}>
           <Text style={styles.remainingText}>
-            <Text style={styles.remainingNumber}>{remaining} kg </Text>
-            {isGaining ? 'to gain' : 'to lose'}
+            {reachedGoal ? (
+              <Text style={[styles.remainingNumber, { color: '#4ade80' }]}>{getStatusText()}</Text>
+            ) : (
+              <>
+                <Text style={styles.remainingNumber}>{remaining} kg </Text>
+                {targetWeight > currentWeight ? 'to gain' : 'to lose'}
+              </>
+            )}
           </Text>
-          <Text style={styles.percentText}>{Math.round(progress * 100)}% there</Text>
+          <Text style={[styles.percentText, reachedGoal && { color: '#4ade80' }]}>
+            {reachedGoal ? '100%' : `${Math.round(progress * 100)}%`} there
+          </Text>
         </View>
       </View>
     </View>

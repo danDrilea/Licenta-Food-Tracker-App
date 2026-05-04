@@ -129,7 +129,7 @@ const styles = StyleSheet.create({
   statDivider: {
     width: 1,
     height: 28,
-    backgroundColor: '#3a3d45',
+    backgroundColor: '#2a2d35',
   },
   statValue: {
     color: '#ffffff',
