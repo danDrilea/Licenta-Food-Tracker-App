@@ -107,6 +107,11 @@ export default function DashboardScreen() {
         />
       </View>
 
+      {/* ─── Streak ─── */}
+      <View style={styles.section}>
+        <StreakCounter days={streak} isFrozen={isFrozen} />
+      </View>
+
       {/* ─── 2. Macronutrients ─── */}
       <View style={styles.card}>
         <MacroBreakdown
@@ -135,10 +140,6 @@ export default function DashboardScreen() {
         />
       </View>
 
-      {/* ─── 5. Streak ─── */}
-      <View style={styles.section}>
-        <StreakCounter days={streak} isFrozen={isFrozen} />
-      </View>
 
       {/* ─── 6. Weekly Overview ─── */}
       <View style={styles.card}>

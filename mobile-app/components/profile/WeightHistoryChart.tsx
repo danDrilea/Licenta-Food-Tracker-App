@@ -1,6 +1,6 @@
-import React from 'react';
-import { View, Text, StyleSheet, Pressable } from 'react-native';
-import Svg, { Rect, Line, Circle as SvgCircle } from 'react-native-svg';
+import React, { useMemo, useRef, useEffect } from 'react';
+import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
+import Svg, { Rect, Line, Circle as SvgCircle, Text as SvgText } from 'react-native-svg';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { WeightEntry } from '../../types/profile';
 
@@ -9,20 +9,34 @@ interface WeightHistoryChartProps {
   onLogWeight?: () => void;
 }
 
-const CHART_HEIGHT = 100;
+const CHART_HEIGHT = 120;
 const DOT_RADIUS = 4;
+const COLUMN_WIDTH = 50; // Increased for better breathing room
 
 export default function WeightHistoryChart({ entries, onLogWeight }: WeightHistoryChartProps) {
-  const hasData = entries.length > 1;
+  const scrollViewRef = useRef<ScrollView>(null);
 
-  // Take last 10 entries for display
-  const displayEntries = entries.slice(-10);
+  // Take last 30 entries for a better trend view
+  const displayEntries = useMemo(() => {
+    return [...entries].reverse().slice(-30);
+  }, [entries]);
+
+  const hasData = displayEntries.length > 1;
   const weights = displayEntries.map((e) => e.weight);
   const minW = Math.min(...weights) - 1;
   const maxW = Math.max(...weights) + 1;
   const range = maxW - minW || 1;
 
-  const chartWidth = Math.max(displayEntries.length * 40, 200);
+  const chartWidth = Math.max(displayEntries.length * COLUMN_WIDTH, 200);
+
+  // Auto-scroll to the end (latest weight) when data loads
+  useEffect(() => {
+    if (hasData) {
+      setTimeout(() => {
+        scrollViewRef.current?.scrollToEnd({ animated: true });
+      }, 500);
+    }
+  }, [hasData]);
 
   return (
     <View style={styles.container}>
@@ -48,16 +62,22 @@ export default function WeightHistoryChart({ entries, onLogWeight }: WeightHisto
               </Text>
             </View>
 
-            {/* Chart */}
-            <View style={styles.chartWrapper}>
-              <Svg width={chartWidth} height={CHART_HEIGHT + 20} style={styles.svg}>
-                {/* Connect dots with lines */}
-                {displayEntries.map((entry, i) => {
-                  if (i === 0) return null;
-                  const prevX = (i - 1) * 40 + 20;
-                  const prevY = CHART_HEIGHT - ((weights[i - 1] - minW) / range) * CHART_HEIGHT + 10;
-                  const currX = i * 40 + 20;
-                  const currY = CHART_HEIGHT - ((weights[i] - minW) / range) * CHART_HEIGHT + 10;
+            {/* Scrollable Chart */}
+            <ScrollView 
+              ref={scrollViewRef}
+              horizontal 
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.chartScrollContent}
+            >
+              <View style={styles.chartWrapper}>
+                <Svg width={chartWidth} height={CHART_HEIGHT + 30} style={styles.svg}>
+                  {/* Connect dots with lines */}
+                  {displayEntries.map((entry, i) => {
+                    if (i === 0) return null;
+                    const prevX = (i - 1) * COLUMN_WIDTH + 25;
+                    const prevY = CHART_HEIGHT - ((weights[i - 1] - minW) / range) * CHART_HEIGHT + 15;
+                    const currX = i * COLUMN_WIDTH + 25;
+                    const currY = CHART_HEIGHT - ((weights[i] - minW) / range) * CHART_HEIGHT + 15;
 
                   return (
                     <Line
@@ -73,22 +93,35 @@ export default function WeightHistoryChart({ entries, onLogWeight }: WeightHisto
                   );
                 })}
 
-                {/* Dots */}
+                {/* Dots and Labels */}
                 {displayEntries.map((entry, i) => {
-                  const x = i * 40 + 20;
-                  const y = CHART_HEIGHT - ((weights[i] - minW) / range) * CHART_HEIGHT + 10;
+                  const x = i * COLUMN_WIDTH + 25;
+                  const y = CHART_HEIGHT - ((weights[i] - minW) / range) * CHART_HEIGHT + 15;
                   const isLast = i === displayEntries.length - 1;
 
                   return (
-                    <SvgCircle
-                      key={`dot-${i}`}
-                      cx={x}
-                      cy={y}
-                      r={isLast ? DOT_RADIUS + 2 : DOT_RADIUS}
-                      fill={isLast ? '#c77ffb' : '#8b5cf6'}
-                      stroke={isLast ? '#1e2126' : 'none'}
-                      strokeWidth={isLast ? 2 : 0}
-                    />
+                    <React.Fragment key={`point-${i}`}>
+                      {/* Weight Label */}
+                      <SvgText
+                        x={x}
+                        y={y - 10}
+                        fontSize="10"
+                        fill={isLast ? '#ffffff' : '#9ca3af'}
+                        fontWeight={isLast ? '800' : '500'}
+                        textAnchor="middle"
+                      >
+                        {weights[i]}
+                      </SvgText>
+
+                      <SvgCircle
+                        cx={x}
+                        cy={y}
+                        r={isLast ? DOT_RADIUS + 2 : DOT_RADIUS}
+                        fill={isLast ? '#c77ffb' : '#8b5cf6'}
+                        stroke={isLast ? '#1e2126' : 'none'}
+                        strokeWidth={isLast ? 2 : 0}
+                      />
+                    </React.Fragment>
                   );
                 })}
               </Svg>
@@ -96,22 +129,23 @@ export default function WeightHistoryChart({ entries, onLogWeight }: WeightHisto
               {/* Date labels */}
               <View style={[styles.dateLabels, { width: chartWidth }]}>
                 {displayEntries.map((entry, i) => (
-                  <Text key={i} style={[styles.dateLabel, { width: 40 }]}>
+                  <Text key={i} style={[styles.dateLabel, { width: COLUMN_WIDTH }]}>
                     {shortDate(entry.date)}
                   </Text>
                 ))}
               </View>
             </View>
-          </>
-        ) : (
-          <View style={styles.emptyState}>
-            <Ionicons name="analytics-outline" size={32} color="#4b5563" />
-            <Text style={styles.emptyText}>Log your weight to see trends</Text>
-          </View>
-        )}
-      </View>
+          </ScrollView>
+        </>
+      ) : (
+        <View style={styles.emptyState}>
+          <Ionicons name="analytics-outline" size={32} color="#4b5563" />
+          <Text style={styles.emptyText}>Log your weight to see trends</Text>
+        </View>
+      )}
     </View>
-  );
+  </View>
+);
 }
 
 function formatDate(iso: string): string {
@@ -178,6 +212,9 @@ const styles = StyleSheet.create({
     color: '#6b7280',
     fontSize: 12,
     fontWeight: '500',
+  },
+  chartScrollContent: {
+    paddingHorizontal: 10,
   },
   chartWrapper: {
     alignItems: 'center',

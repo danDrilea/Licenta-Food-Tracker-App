@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Alert } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
 interface StreakCounterProps {
@@ -19,7 +19,15 @@ function getMotivation(days: number, isFrozen: boolean): string {
 
 export default function StreakCounter({ days, isFrozen = false }: StreakCounterProps) {
   const motivation = getMotivation(days, isFrozen);
-  
+
+  const showInfo = () => {
+    Alert.alert(
+      'How Streaks Work',
+      '🔥 Active Streak: Log your food every day to increase your streak.\n\n❄️ Frozen (Grace Day): If you miss a day, your streak is "frozen" instead of breaking. You have one day to log and save your progress!',
+      [{ text: 'Got it', style: 'default' }]
+    );
+  };
+
   const flameColor = isFrozen ? '#6b7280' : '#f97316';
   const glowColor = isFrozen ? 'rgba(107, 114, 128, 0.1)' : 'rgba(249, 115, 22, 0.15)';
   const wrapperBg = isFrozen ? 'rgba(107, 114, 128, 0.1)' : 'rgba(249, 115, 22, 0.12)';
@@ -33,8 +41,13 @@ export default function StreakCounter({ days, isFrozen = false }: StreakCounterP
         </View>
         <View style={styles.textBlock}>
           <View style={styles.daysRow}>
-            <Text style={[styles.daysNumber, { color: flameColor }]}>{days}</Text>
-            <Text style={styles.daysLabel}> day{days !== 1 ? 's' : ''} streak</Text>
+            <View style={styles.daysMainRow}>
+              <Text style={[styles.daysNumber, { color: flameColor }]}>{days}</Text>
+              <Text style={styles.daysLabel}> day{days !== 1 ? 's' : ''} streak</Text>
+              <Pressable onPress={showInfo} style={styles.infoButton}>
+                <Ionicons name="information-circle-outline" size={16} color="#9ca3af" />
+              </Pressable>
+            </View>
             {isFrozen && (
               <View style={styles.frozenBadge}>
                 <Ionicons name="snow" size={10} color="#38bdf8" />
@@ -83,6 +96,10 @@ const styles = StyleSheet.create({
   },
   textBlock: { flex: 1 },
   daysRow: {
+    gap: 4,
+    alignItems: 'flex-start',
+  },
+  daysMainRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
@@ -95,6 +112,10 @@ const styles = StyleSheet.create({
     color: '#e5e7eb',
     fontSize: 16,
     fontWeight: '600',
+  },
+  infoButton: {
+    marginLeft: 4,
+    padding: 2,
   },
   motivation: {
     color: '#9ca3af',
@@ -110,7 +131,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 10,
-    marginLeft: 8,
+    marginLeft: 0,
   },
   frozenText: {
     color: '#38bdf8',

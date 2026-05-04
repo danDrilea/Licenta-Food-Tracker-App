@@ -5,13 +5,13 @@ export async function initDatabase(db: SQLite.SQLiteDatabase) {
   await db.execAsync('PRAGMA journal_mode = WAL;');
 
   // CLEANUP: Drop old tables once to reset schema
-  await db.execAsync('DROP TABLE IF EXISTS food_entries;');
-  await db.execAsync('DROP TABLE IF EXISTS daily_logs;');
-  await db.execAsync('DROP TABLE IF EXISTS profile;');
-  await db.execAsync('DROP TABLE IF EXISTS weight_history;');
-  await db.execAsync('DROP TABLE IF EXISTS settings;');
-  await db.execAsync('DROP TABLE IF EXISTS meal_slots;');
-  await db.execAsync('DROP TABLE IF EXISTS daily_goals;');
+  // await db.execAsync('DROP TABLE IF EXISTS food_entries;');
+  // await db.execAsync('DROP TABLE IF EXISTS daily_logs;');
+  // await db.execAsync('DROP TABLE IF EXISTS profile;');
+  // await db.execAsync('DROP TABLE IF EXISTS weight_history;');
+  // await db.execAsync('DROP TABLE IF EXISTS settings;');
+  // await db.execAsync('DROP TABLE IF EXISTS meal_slots;');
+  // await db.execAsync('DROP TABLE IF EXISTS daily_goals;');
 
   // Create tables
   await db.execAsync(`
@@ -49,7 +49,8 @@ export async function initDatabase(db: SQLite.SQLiteDatabase) {
     CREATE TABLE IF NOT EXISTS weight_history (
       id TEXT PRIMARY KEY,
       date TEXT NOT NULL,
-      weight REAL NOT NULL
+      weight REAL NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
 
     CREATE TABLE IF NOT EXISTS meal_slots (

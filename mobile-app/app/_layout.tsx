@@ -19,6 +19,9 @@ export default function RootLayout() {
         <SettingsProvider>
           <Stack>
             <Stack.Screen name="(tabs)" options={{ headerShown: false, title: 'Home' }} />
+            <Stack.Screen name="edit-profile" options={{ presentation: 'modal' }} />
+            <Stack.Screen name="edit-goal" options={{ presentation: 'modal' }} />
+            <Stack.Screen name="log-weight" options={{ presentation: 'modal' }} />
           </Stack>
         </SettingsProvider>
       </SQLiteProvider>

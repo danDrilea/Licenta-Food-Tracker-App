@@ -1,15 +1,15 @@
 import React from 'react';
-import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Image } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
 interface ProfileHeaderProps {
   firstName: string;
   lastName: string;
-  avatarUri?: string;
+  avatarUri?: string | null;
   onEditPress?: () => void;
 }
 
-export default function ProfileHeader({ firstName, lastName, onEditPress }: ProfileHeaderProps) {
+export default function ProfileHeader({ firstName, lastName, avatarUri, onEditPress }: ProfileHeaderProps) {
   const initials = `${firstName[0] || ''}${lastName[0] || ''}`.toUpperCase();
 
   return (
@@ -17,7 +17,11 @@ export default function ProfileHeader({ firstName, lastName, onEditPress }: Prof
       {/* Avatar */}
       <View style={styles.avatarOuter}>
         <View style={styles.avatar}>
-          <Text style={styles.initials}>{initials}</Text>
+          {avatarUri ? (
+            <Image source={{ uri: avatarUri }} style={styles.image} />
+          ) : (
+            <Text style={styles.initials}>{initials}</Text>
+          )}
         </View>
         <Pressable style={styles.cameraBtn} onPress={onEditPress}>
           <Ionicons name="camera" size={14} color="#fff" />
@@ -48,6 +52,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 3,
     borderColor: '#6d28d9',
+    overflow: 'hidden',
+  },
+  image: {
+    width: '100%',
+    height: '100%',
   },
   initials: {
     color: '#ffffff',

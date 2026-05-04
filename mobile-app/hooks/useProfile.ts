@@ -10,7 +10,7 @@ export function useProfile() {
   const fetchProfile = useCallback(async () => {
     try {
       const row = await db.getFirstAsync<any>('SELECT * FROM profile WHERE id = 1');
-      const latestWeight = await db.getFirstAsync<any>('SELECT weight FROM weight_history ORDER BY date DESC LIMIT 1');
+      const latestWeight = await db.getFirstAsync<any>('SELECT weight FROM weight_history ORDER BY date DESC, created_at DESC LIMIT 1');
       
       if (row) {
         setProfile({
@@ -49,14 +49,18 @@ export function useProfile() {
           last_name = COALESCE(?, last_name),
           height_cm = COALESCE(?, height_cm),
           sex = COALESCE(?, sex),
-          activity_level = COALESCE(?, activity_level)
+          activity_level = COALESCE(?, activity_level),
+          dob = COALESCE(?, dob),
+          country = COALESCE(?, country)
           WHERE id = 1`,
         [
           updates.firstName ?? null,
           updates.lastName ?? null,
           updates.heightCm ?? null,
           updates.sex ?? null,
-          updates.activityLevel ?? null
+          updates.activityLevel ?? null,
+          updates.dateOfBirth ?? null,
+          updates.country ?? null
         ]
       );
       await fetchProfile();
@@ -65,7 +69,19 @@ export function useProfile() {
     }
   };
 
-  return { profile, updateProfile, refreshProfile: fetchProfile };
+  const updateGoal = async (goal: UserProfile['goal']) => {
+    try {
+      await db.runAsync(
+        `UPDATE profile SET goal_type = ?, target_weight = ?, weekly_rate = ? WHERE id = 1`,
+        [goal.type, goal.targetWeight ?? null, goal.weeklyRate ?? null]
+      );
+      await fetchProfile();
+    } catch (error) {
+      console.error('Error updating goal:', error);
+    }
+  };
+
+  return { profile, updateProfile, updateGoal, refreshProfile: fetchProfile };
 }
 
 export function useWeightHistory() {
@@ -74,7 +90,7 @@ export function useWeightHistory() {
 
   const fetchHistory = useCallback(async () => {
     try {
-      const rows = await db.getAllAsync<any>('SELECT * FROM weight_history ORDER BY date DESC');
+      const rows = await db.getAllAsync<any>('SELECT * FROM weight_history ORDER BY date DESC, created_at DESC');
       setHistory(rows.map(r => ({ date: r.date, weight: r.weight })));
     } catch (error) {
       console.error('Error fetching weight history:', error);
