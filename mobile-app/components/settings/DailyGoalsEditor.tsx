@@ -14,16 +14,18 @@ interface GoalFieldProps {
   unit: string;
   color: string;
   onChange: (value: number) => void;
+  max?: number;
   isLast?: boolean;
 }
 
-function GoalField({ label, value, unit, color, onChange, isLast }: GoalFieldProps) {
+function GoalField({ label, value, unit, color, onChange, max, isLast }: GoalFieldProps) {
   const [editing, setEditing] = useState(false);
   const [text, setText] = useState(value.toString());
 
   const save = () => {
-    const num = parseInt(text, 10);
+    let num = parseInt(text, 10);
     if (!isNaN(num) && num > 0) {
+      if (max && num > max) num = max;
       onChange(num);
     } else {
       setText(value.toString());
@@ -76,7 +78,7 @@ export default function DailyGoalsEditor({ goals, onSave }: DailyGoalsEditorProp
         <GoalField label="Protein" value={goals.protein} unit="g" color="#818cf8" onChange={(v) => update('protein', v)} />
         <GoalField label="Carbs" value={goals.carbs} unit="g" color="#f59e0b" onChange={(v) => update('carbs', v)} />
         <GoalField label="Fat" value={goals.fat} unit="g" color="#f472b6" onChange={(v) => update('fat', v)} />
-        <GoalField label="Water" value={goals.waterGlasses} unit="glasses" color="#38bdf8" onChange={(v) => update('waterGlasses', v)} isLast />
+        <GoalField label="Water" value={goals.waterGlasses} unit="glasses" color="#38bdf8" onChange={(v) => update('waterGlasses', v)} max={32} isLast />
       </View>
     </View>
   );

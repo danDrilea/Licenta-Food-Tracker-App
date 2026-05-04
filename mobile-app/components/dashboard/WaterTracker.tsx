@@ -11,7 +11,12 @@ interface WaterTrackerProps {
 const WATER_COLOR = '#38bdf8';
 const WATER_COLOR_DIM = '#1e3a4d';
 
+const MAX_GLASSES_DISPLAY = 32;
+
 export default function WaterTracker({ glasses, goal = 8, onGlassesChange }: WaterTrackerProps) {
+  // Cap the goal for display purposes
+  const displayGoal = Math.min(goal, MAX_GLASSES_DISPLAY);
+  
   const handleTap = (index: number) => {
     // If tapping the last filled glass, unfill it (toggle behavior)
     if (index + 1 === glasses) {
@@ -32,8 +37,8 @@ export default function WaterTracker({ glasses, goal = 8, onGlassesChange }: Wat
         </Text>
       </View>
 
-      <View style={styles.glassRow}>
-        {Array.from({ length: goal }, (_, i) => {
+      <View style={styles.glassGrid}>
+        {Array.from({ length: displayGoal }, (_, i) => {
           const isFilled = i < glasses;
           return (
             <Pressable
@@ -52,6 +57,7 @@ export default function WaterTracker({ glasses, goal = 8, onGlassesChange }: Wat
             </Pressable>
           );
         })}
+        {/* If goal > displayGoal, maybe show a hint or just cap it */}
       </View>
     </View>
   );
@@ -88,14 +94,18 @@ const styles = StyleSheet.create({
     color: '#6b7280',
     fontWeight: '500',
   },
-  glassRow: {
+  glassGrid: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexWrap: 'wrap',
     alignItems: 'center',
+    marginLeft: -6, // Offset the button padding
   },
   glassButton: {
     padding: 6,
     borderRadius: 12,
+    width: '12.5%', // Exactly 8 per row
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   glassButtonPressed: {
     backgroundColor: 'rgba(56, 189, 248, 0.1)',
