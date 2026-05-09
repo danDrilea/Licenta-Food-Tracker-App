@@ -1,0 +1,84 @@
+# FoodInsSeg v2 — Cleaned dataset (73 classes)
+# Removed Asian-specific, uncommon, and low-sample classes
+# Merged similar classes (mushrooms, berries, noodles→pasta, etc.)
+# Original: food.yaml (103 classes)
+
+path: ./FoodInsSeg
+train: images/train
+val: images/test
+
+# 73 food classes indexed from 0 to 72
+names:
+  0: candy
+  1: french fries
+  2: chocolate
+  3: biscuit
+  4: popcorn
+  5: ice cream
+  6: cheese butter
+  7: cake
+  8: wine
+  9: milkshake
+  10: coffee
+  11: juice
+  12: milk
+  13: almond
+  14: cashew
+  15: dried cranberries
+  16: walnut
+  17: peanut
+  18: egg
+  19: apple
+  20: apricot
+  21: avocado
+  22: banana
+  23: strawberry
+  24: cherry
+  25: berries
+  26: mango
+  27: olives
+  28: peach
+  29: lemon
+  30: pear
+  31: pineapple
+  32: grape
+  33: kiwi
+  34: melon
+  35: orange
+  36: watermelon
+  37: steak
+  38: pork
+  39: chicken
+  40: sausage
+  41: fried meat
+  42: sauce
+  43: crab
+  44: fish
+  45: shellfish
+  46: shrimp
+  47: soup
+  48: bread
+  49: corn
+  50: hamburger
+  51: pizza
+  52: pasta
+  53: rice
+  54: pie
+  55: eggplant
+  56: potato
+  57: garlic
+  58: cauliflower
+  59: tomato
+  60: lettuce
+  61: pumpkin
+  62: cucumber
+  63: carrot
+  64: asparagus
+  65: broccoli
+  66: celery
+  67: cabbage
+  68: onion
+  69: pepper
+  70: green beans
+  71: mushroom
+  72: salad

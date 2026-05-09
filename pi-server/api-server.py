@@ -20,27 +20,25 @@ app.add_middleware(
 
 # Define paths
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-WEIGHTS_PATH = os.path.join(BASE_DIR, "..", "computer-vision-training", "trainedModel", "best.pt")
+WEIGHTS_PATH = os.path.join(BASE_DIR, "..", "computer-vision-training", "runs", "FoodInsSeg_L_v2", "weights", "best.pt")
 
-# Class names as defined in the training script
+# v2 — 73 classes (cleaned dataset, removed Asian/uncommon, merged similar)
 CLASS_NAMES = [
-    "candy", "egg tart", "french fries", "chocolate", "biscuit", "popcorn",
-    "pudding", "ice cream", "cheese butter", "cake", "wine", "milkshake",
-    "coffee", "juice", "milk", "tea", "almond", "red beans", "cashew",
-    "dried cranberries", "soy", "walnut", "peanut", "egg", "apple", "date",
-    "apricot", "avocado", "banana", "strawberry", "cherry", "blueberry",
-    "raspberry", "mango", "olives", "peach", "lemon", "pear", "fig",
-    "pineapple", "grape", "kiwi", "melon", "orange", "watermelon", "steak",
-    "pork", "chicken duck", "sausage", "fried meat", "lamb", "sauce", "crab",
-    "fish", "shellfish", "shrimp", "soup", "bread", "corn", "hamburg",
-    "pizza", "hanamaki baozi", "wonton dumplings", "pasta", "noodles",
-    "rice", "pie", "tofu", "eggplant", "potato", "garlic", "cauliflower",
-    "tomato", "kelp", "seaweed", "spring onion", "rape", "ginger", "okra",
-    "lettuce", "pumpkin", "cucumber", "white radish", "carrot", "asparagus",
-    "bamboo shoots", "broccoli", "celery stick", "cilantro mint", "snow peas",
-    "cabbage", "bean sprouts", "onion", "pepper", "green beans",
-    "French beans", "king oyster mushroom", "shiitake", "enoki mushroom",
-    "oyster mushroom", "white button mushroom", "salad", "other ingredients",
+    "candy", "french fries", "chocolate", "biscuit", "popcorn",
+    "ice cream", "cheese butter", "cake", "wine", "milkshake",
+    "coffee", "juice", "milk", "almond", "cashew",
+    "dried cranberries", "walnut", "peanut", "egg", "apple",
+    "apricot", "avocado", "banana", "strawberry", "cherry",
+    "berries", "mango", "olives", "peach", "lemon",
+    "pear", "pineapple", "grape", "kiwi", "melon",
+    "orange", "watermelon", "steak", "pork", "chicken",
+    "sausage", "fried meat", "sauce", "crab", "fish",
+    "shellfish", "shrimp", "soup", "bread", "corn",
+    "hamburger", "pizza", "pasta", "rice", "pie",
+    "eggplant", "potato", "garlic", "cauliflower", "tomato",
+    "lettuce", "pumpkin", "cucumber", "carrot", "asparagus",
+    "broccoli", "celery", "cabbage", "onion", "pepper",
+    "green beans", "mushroom", "salad",
 ]
 
 # Load model at startup
