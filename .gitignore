@@ -11,10 +11,12 @@ computer-vision-training/**/*.txt
 
 # Ignore YOLO training runs and heavy AI models
 computer-vision-training/runs/
-computer-vision-training/runs/*.pt
-computer-vision-training/runs/*.onnx
-computer-vision-training/runs/*.hef
-computer-vision-training/scripts/*.pt
+computer-vision-training/trainedModel/
+*.pt
+*.onnx
+*.hef
+
+
 
 # Ignore Python cache
 __pycache__/
