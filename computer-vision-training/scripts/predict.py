@@ -32,7 +32,7 @@ CLASS_NAMES = [
 # Classes without a direct match (marked *) use standard food science estimates.
 DENSITY = {
     "candy": 1.20,               # * hard candy / gummy avg
-    "french fries": 0.55,        # * fried potato strips, loose packing
+    "french fries": 0.90,        # * fried potato strips, substance density
     "chocolate": 1.056,          # density_DB_v2: chocolate
     "biscuit": 0.45,             # * dry baked goods, loose
     "popcorn": 0.04,             # * popped corn, very low bulk density
@@ -242,18 +242,25 @@ def main():
         print(f"[ERROR] Weights not found: {WEIGHTS}")
         sys.exit(1)
 
+    import time
+    t_start = time.time()
+
     from ultralytics import YOLO
     import cv2
     import numpy as np
     import random
 
+    t_imports = time.time()
+
     # ── Step 1: YOLO segmentation ────────────────────────────────────────
     print("[1/3] Running YOLO segmentation...")
+    t_yolo_start = time.time()
     model = YOLO(WEIGHTS)
     results = model.predict(
         source=image_path, conf=CONF, save=True, verbose=False,
-        project=SAVE_DIR, name="run", exist_ok=True,
+        project=SAVE_DIR, name="run", exist_ok=True, agnostic_nms=True
     )
+    t_yolo_end = time.time()
 
     result = results[0]
     original_img = result.orig_img.copy()
@@ -269,8 +276,10 @@ def main():
 
     # ── Step 2: MiDaS depth estimation ───────────────────────────────────
     print("[2/3] Running MiDaS depth estimation...")
+    t_midas_start = time.time()
     midas, transform, device = load_midas()
     depth_map = estimate_depth(midas, transform, device, img_rgb)
+    t_midas_end = time.time()
 
     # Save depth map visualization
     depth_vis = (depth_map * 255).astype(np.uint8)
@@ -286,6 +295,7 @@ def main():
 
     # ── Step 3: Combine YOLO masks + depth → volume → mass ──────────────
     print("[3/3] Computing volumes and masses...")
+    t_post_start = time.time()
 
     # Collect detections per class
     class_data = {}  # name -> { "binary_masks": [...] }
@@ -399,7 +409,19 @@ def main():
     side_by_side = np.hstack([original_img, depth_colored, vis_img])
     combo_path = os.path.join(SAVE_DIR, "run", f"{stem}_combo{ext}")
     cv2.imwrite(combo_path, side_by_side)
-    print(f"[INFO] Saved combo   -> {combo_path}")
+    print("[INFO] Saved combo   -> {combo_path}")
+
+    t_end = time.time()
+    print("\n  " + "=" * 70)
+    print("  [TIMING SUMMARY FOR LICENTA THESIS]")
+    print(f"    1. Importuri și Startup:         {t_imports - t_start:.3f} s")
+    print(f"    2. Inferență YOLOv11:            {t_yolo_end - t_yolo_start:.3f} s")
+    print(f"    3. Inferență MiDaS (Adâncime):   {t_midas_end - t_midas_start:.3f} s")
+    print(f"    4. Integrare Volum și Masă:      {t_end - t_post_start:.3f} s")
+    print(f"    ------------------------------------------------------------------")
+    print(f"    Timp Total Inferență Activă:     {t_end - t_yolo_start:.3f} s")
+    print(f"    Timp Total Rulare Script:        {t_end - t_start:.3f} s")
+    print("  " + "=" * 70)
 
 
 if __name__ == "__main__":
