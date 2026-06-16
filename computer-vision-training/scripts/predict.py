@@ -228,11 +228,24 @@ def compute_volume_cm3(depth_map, binary_mask, cm2_per_px, D_base):
 
 
 def main():
-    if len(sys.argv) != 2:
-        print("Usage: python scripts/predict.py <image_path>")
+    global K_DEPTH_CM
+
+    if len(sys.argv) not in [2, 3]:
+        print("Usage: python scripts/predict.py <image_path> [A|B|C]")
+        print("  A = Mâncare plată (K_DEPTH = 5.0)")
+        print("  B = Mâncare medie (K_DEPTH = 10.0)")
+        print("  C = Mâncare înaltă (K_DEPTH = 15.0)")
         sys.exit(1)
 
     image_path = sys.argv[1]
+    depth_cat = sys.argv[2].upper() if len(sys.argv) == 3 else "B"
+
+    if depth_cat == "A":
+        K_DEPTH_CM = 5.0
+    elif depth_cat == "C":
+        K_DEPTH_CM = 15.0
+    else:
+        K_DEPTH_CM = 10.0
 
     if not os.path.isfile(image_path):
         print(f"[ERROR] Image not found: {image_path}")
@@ -393,10 +406,26 @@ def main():
             cx, cy = w // 2, h // 2
 
         label = f"{name} ~{t['mass_g']:.0f}g"
-        cv2.putText(vis_img, label, (cx - 50, cy),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.55, (255, 255, 255), 2)
-        cv2.putText(vis_img, label, (cx - 50, cy),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.55, color, 1)
+        
+        font_scale = max(0.7, (w / 1000.0) * 1.2)
+        thick_out = int(max(3, font_scale * 4))
+        thick_in = int(max(1, font_scale * 2))
+
+        # Centering and bounding checks
+        text_size = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, font_scale, thick_out)[0]
+        text_w, text_h = text_size[0], text_size[1]
+        
+        text_x = int(cx - text_w / 2)
+        text_y = int(cy + text_h / 2)
+        
+        # Keep text inside bounds (10px margin)
+        text_x = max(10, min(text_x, w - text_w - 10))
+        text_y = max(text_h + 10, min(text_y, h - 10))
+
+        cv2.putText(vis_img, label, (text_x, text_y),
+                    cv2.FONT_HERSHEY_SIMPLEX, font_scale, (255, 255, 255), thick_out)
+        cv2.putText(vis_img, label, (text_x, text_y),
+                    cv2.FONT_HERSHEY_SIMPLEX, font_scale, color, thick_in)
 
     print("  " + "=" * 70)
     print(f"\n  TOTAL PLATE: {total_volume:.1f} cm³  |  {total_mass:.1f} g")

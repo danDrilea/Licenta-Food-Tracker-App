@@ -24,9 +24,11 @@ interface IndexCardProps {
   formula?: string;
 }
 
-function IndexCard({ label, value, subtitle, color = '#ffffff', description, formula }: IndexCardProps) {
+function IndexCard({ label, value, subtitle, color, description, formula }: IndexCardProps) {
   const [showInfo, setShowInfo] = useState(false);
   const theme = useThemeColors();
+
+  const textColor = color || theme.textPrimary;
 
   return (
     <>
@@ -38,8 +40,16 @@ function IndexCard({ label, value, subtitle, color = '#ffffff', description, for
           </Pressable>
         </View>
 
-        <Text style={[styles.indexValue, { color }]}>{value}</Text>
-        {subtitle && <Text style={[styles.indexSubtitle, { color }]}>{subtitle}</Text>}
+        <Text style={[styles.indexValue, { color: textColor }]}>{value}</Text>
+        {subtitle && (
+          <Text 
+            style={[styles.indexSubtitle, { color: textColor }]}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+          >
+            {subtitle}
+          </Text>
+        )}
       </View>
 
       {/* Info Modal */}
