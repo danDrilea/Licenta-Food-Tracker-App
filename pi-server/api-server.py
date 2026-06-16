@@ -1,32 +1,55 @@
+"""
+AI Food Tracker — Raspberry Pi API Server
+==========================================
+FastAPI server running YOLO instance-segmentation + MiDaS monocular depth
+to detect food items and estimate their volume (cm³) and mass (grams).
+
+Usage (on Raspberry Pi):
+    uvicorn api-server:app --host 0.0.0.0 --port 8000
+"""
+
 import os
 import io
-import base64
+import math
+import time
+
+import cv2
+import numpy as np
+import torch
 from PIL import Image
 from fastapi import FastAPI, File, UploadFile, Query
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from ultralytics import YOLO
-from llama_cpp import Llama
+
+
+# ══════════════════════════════════════════════════════════════════════
+#  App Setup
+# ══════════════════════════════════════════════════════════════════════
 
 app = FastAPI(title="AI Food Tracker API")
 
-# Add CORS Middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # Allows all origins
+    allow_origins=["*"],
     allow_credentials=True,
-    allow_methods=["*"], # Allows all methods (POST, GET, etc.)
-    allow_headers=["*"], # Allows all headers
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
-# Define paths
+# ══════════════════════════════════════════════════════════════════════
+#  Paths
+# ══════════════════════════════════════════════════════════════════════
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-WEIGHTS_PATH = os.path.join(BASE_DIR, "..", "computer-vision-training", "trainedModel", "best.pt")
+WEIGHTS_PATH = os.path.join(
+    BASE_DIR, "..", "computer-vision-training", "trainedModel", "best.pt"
+)
 
-# Calea către modelul tău din subfolderul 'llama' (relativă la pi-server)
-LLM_PATH = os.path.join(BASE_DIR, "llama", "Llama-3.2-3B-Instruct-Q4_K_M.gguf")
+# ══════════════════════════════════════════════════════════════════════
+#  73 Food Classes (v2 — cleaned dataset)
+# ══════════════════════════════════════════════════════════════════════
 
-# v2 — 73 classes (cleaned dataset, removed Asian/uncommon, merged similar)
 CLASS_NAMES = [
     "candy", "french fries", "chocolate", "biscuit", "popcorn",
     "ice cream", "cheese butter", "cake", "wine", "milkshake",
@@ -45,128 +68,435 @@ CLASS_NAMES = [
     "green beans", "mushroom", "salad",
 ]
 
-# Load YOLO model at startup
-model = None
-if os.path.exists(WEIGHTS_PATH):
-    model = YOLO(WEIGHTS_PATH)
-else:
-    print(f"Warning: YOLO model weights not found at {WEIGHTS_PATH}")
+# ══════════════════════════════════════════════════════════════════════
+#  Density Table (g/cm³)
+#  Source: density_DB_v2_0_final (USDA FoodData Central, UK 6th Ed, S&W)
+#  Classes marked * use standard food-science estimates.
+# ══════════════════════════════════════════════════════════════════════
 
-# Load Llama model at startup
-llm = None
-if os.path.exists(LLM_PATH):
-    print(f"[INFO] Se încarcă LLM-ul din: {LLM_PATH} ...")
-    # n_ctx=512 este suficient pentru teste și mesaje nutriționale scurte
-    llm = Llama(model_path=LLM_PATH, n_ctx=512, verbose=False)
-    print("[SUCCESS] Llama a fost încărcat cu succes în RAM!")
+DENSITY = {
+    "candy": 1.20,
+    "french fries": 0.90,
+    "chocolate": 1.056,
+    "biscuit": 0.45,
+    "popcorn": 0.04,
+    "ice cream": 0.568,
+    "cheese butter": 1.05,
+    "cake": 0.809,
+    "wine": 0.996,
+    "milkshake": 1.05,
+    "coffee": 0.750,
+    "juice": 1.050,
+    "milk": 0.877,
+    "almond": 0.460,
+    "cashew": 0.500,
+    "dried cranberries": 0.55,
+    "walnut": 0.45,
+    "peanut": 0.793,
+    "egg": 0.640,
+    "apple": 0.915,
+    "apricot": 0.88,
+    "avocado": 0.95,
+    "banana": 1.067,
+    "strawberry": 1.080,
+    "cherry": 1.02,
+    "berries": 0.62,
+    "mango": 0.998,
+    "olives": 0.650,
+    "peach": 0.92,
+    "lemon": 1.010,
+    "pear": 1.050,
+    "pineapple": 0.88,
+    "grape": 1.056,
+    "kiwi": 1.00,
+    "melon": 0.92,
+    "orange": 1.037,
+    "watermelon": 0.95,
+    "steak": 1.05,
+    "pork": 0.808,
+    "chicken": 0.879,
+    "sausage": 0.95,
+    "fried meat": 0.90,
+    "sauce": 0.815,
+    "crab": 0.85,
+    "fish": 1.02,
+    "shellfish": 0.95,
+    "shrimp": 0.90,
+    "soup": 1.032,
+    "bread": 0.344,
+    "corn": 0.688,
+    "hamburger": 1.038,
+    "pizza": 0.65,
+    "pasta": 0.583,
+    "rice": 0.677,
+    "pie": 0.120,
+    "eggplant": 0.825,
+    "potato": 0.899,
+    "garlic": 0.335,
+    "cauliflower": 0.450,
+    "tomato": 1.017,
+    "lettuce": 0.06,
+    "pumpkin": 0.70,
+    "cucumber": 0.96,
+    "carrot": 0.625,
+    "asparagus": 0.40,
+    "broccoli": 0.950,
+    "celery": 0.60,
+    "cabbage": 0.36,
+    "onion": 0.538,
+    "pepper": 0.450,
+    "green beans": 0.530,
+    "mushroom": 1.017,
+    "salad": 0.680,
+}
+
+# ══════════════════════════════════════════════════════════════════════
+#  Geometric Calibration Constants (Pinhole Camera Model)
+# ══════════════════════════════════════════════════════════════════════
+
+CONF_THRESHOLD = 0.25
+CAMERA_DISTANCE_CM = 35.0       # standard capture distance (arm's length)
+CAMERA_HFOV_DEG    = 75.0       # typical smartphone horizontal FOV
+
+# K_DEPTH_CM maps per request via depth_category query param:
+#   A = flat food  (5.0)
+#   B = medium     (10.0)  ← default
+#   C = tall food  (15.0)
+K_DEPTH_MAP = {"A": 5.0, "B": 10.0, "C": 15.0}
+
+
+# ══════════════════════════════════════════════════════════════════════
+#  Helper Functions (ported from predict.py)
+# ══════════════════════════════════════════════════════════════════════
+
+def compute_cm_per_pixel(image_width_px: int) -> float:
+    """Pinhole camera model: cm per pixel at CAMERA_DISTANCE_CM.
+
+    scene_width = 2 · d · tan(θ / 2)
+    cm_per_pixel = scene_width / image_width_px
+    """
+    half_fov_rad = math.radians(CAMERA_HFOV_DEG / 2)
+    scene_width_cm = 2 * CAMERA_DISTANCE_CM * math.tan(half_fov_rad)
+    return scene_width_cm / image_width_px
+
+
+def estimate_depth(img_rgb: np.ndarray) -> np.ndarray:
+    """Run MiDaS inference → normalized disparity map in [0, 1].
+
+    Higher values = closer to camera.
+    """
+    input_batch = midas_transform(img_rgb).to(midas_device)
+
+    with torch.no_grad():
+        prediction = midas_model(input_batch)
+        prediction = torch.nn.functional.interpolate(
+            prediction.unsqueeze(1),
+            size=img_rgb.shape[:2],
+            mode="bicubic",
+            align_corners=False,
+        ).squeeze()
+
+    depth = prediction.cpu().numpy()
+
+    # Normalize to [0, 1]
+    depth = depth - depth.min()
+    if depth.max() > 0:
+        depth = depth / depth.max()
+
+    return depth
+
+
+def compute_baseline_depth(
+    depth_map: np.ndarray, binary_mask: np.ndarray
+) -> float:
+    """Median disparity along mask boundary (plate/container surface).
+
+    Boundary pixels sit on the reference plane beneath the food.
+    """
+    contours, _ = cv2.findContours(
+        binary_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
+    )
+    if not contours:
+        return float(np.median(depth_map))
+
+    boundary_mask = np.zeros_like(binary_mask)
+    cv2.drawContours(boundary_mask, contours, -1, 1, thickness=3)
+
+    boundary_depths = depth_map[boundary_mask == 1]
+    if len(boundary_depths) == 0:
+        return float(np.median(depth_map))
+
+    return float(np.median(boundary_depths))
+
+
+def compute_volume_cm3(
+    depth_map: np.ndarray,
+    binary_mask: np.ndarray,
+    cm2_per_px: float,
+    d_base: float,
+    k_depth_cm: float,
+) -> float:
+    """Per-pixel Riemann sum for volumetric integration.
+
+    H(x,y) = max(0, D(x,y) - D_base)
+    V = cm²_per_pixel × K_DEPTH_CM × Σ H(x,y)
+    """
+    food_disparities = depth_map[binary_mask == 1]
+    if len(food_disparities) == 0:
+        return 0.0
+
+    heights = np.maximum(0.0, food_disparities - d_base)
+    v_idx = float(np.sum(heights))
+
+    return cm2_per_px * k_depth_cm * v_idx
+
+
+# ══════════════════════════════════════════════════════════════════════
+#  Model Loading (at startup)
+# ══════════════════════════════════════════════════════════════════════
+
+# --- YOLO ---
+print(f"[INFO] Loading YOLO model from: {WEIGHTS_PATH}")
+yolo_model = None
+if os.path.exists(WEIGHTS_PATH):
+    yolo_model = YOLO(WEIGHTS_PATH)
+    print("[OK] YOLO model loaded successfully.")
 else:
-    print(f"[ERROR] Nu am găsit fișierul .gguf la calea: {LLM_PATH}")
+    print(f"[WARNING] YOLO weights not found at {WEIGHTS_PATH}")
+
+# --- MiDaS ---
+print("[INFO] Loading MiDaS depth estimation model...")
+midas_model = None
+midas_transform = None
+midas_device = None
+try:
+    midas_device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    midas_model = torch.hub.load(
+        "intel-isl/MiDaS", "MiDaS_small", trust_repo=True
+    )
+    midas_model.to(midas_device).eval()
+
+    transforms = torch.hub.load(
+        "intel-isl/MiDaS", "transforms", trust_repo=True
+    )
+    midas_transform = transforms.small_transform
+    print(f"[OK] MiDaS loaded on {midas_device}.")
+except Exception as e:
+    print(f"[WARNING] Failed to load MiDaS: {e}")
+
+
+# ══════════════════════════════════════════════════════════════════════
+#  API Endpoints
+# ══════════════════════════════════════════════════════════════════════
 
 @app.get("/")
 async def root():
     return {
-        "message": "Raspberry Pi Server is Live!",
-        "model_loaded": model is not None,
-        "llm_loaded": llm is not None
+        "message": "Raspberry Pi Food Tracker API is Live!",
+        "yolo_loaded": yolo_model is not None,
+        "midas_loaded": midas_model is not None,
     }
 
-@app.get("/llama-demo")
-async def llama_demo(prompt: str = Query(..., description="Promptul trimis către Llama")):
-    if llm is None:
-        return JSONResponse(
-            content={"status": "error", "message": "Modelul LLM nu este încărcat."},
-            status_code=500
-        )
-
-    try:
-        # Pachet de instrucțiuni mult mai strict pentru a evita textul lung și inutil
-        formatted_prompt = (
-            "<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\n"
-            "Ești un asistent nutrițional inteligent și extrem de concis. "
-            "Analizează alimentele utilizatorului și oferă un răspuns de MAXIMUM 3-4 propoziții în limba română. "
-            "Fii direct, nu folosi introduceri lungi și academice.<|eot_id|>"
-            "<|start_header_id|>user<|end_header_id|>\n\n"
-            f"{prompt}<|eot_id|>"
-            "<|start_header_id|>assistant<|end_header_id|>\n\n"
-        )
-        
-        # CORECTAT: max_tokens mărit la 250 pentru a preveni tăierea textului
-        response = llm(
-            formatted_prompt,
-            max_tokens=250,  # Destul spațiu pentru 3-4 propoziții complete
-            temperature=0.4, # Temperatură joasă pentru păstrarea coerenței
-            top_p=0.9,
-            stop=["<|eot_id|>", "<|start_header_id|>", "</s>"]
-        )
-        
-        answer = response["choices"][0]["text"].strip()
-        
-        return {
-            "status": "success",
-            "input_prompt": prompt,
-            "llama_response": answer
-        }
-    except Exception as e:
-        return JSONResponse(
-            content={"status": "error", "message": f"Eroare la generare: {str(e)}"},
-            status_code=500
-        )
 
 @app.post("/analyze-food")
-async def analyze_food(photo: UploadFile = File(...)):
-    if model is None:
+async def analyze_food(
+    photo: UploadFile = File(...),
+    depth_category: str = Query(
+        "B",
+        description="Food height category: A=flat (5cm), B=medium (10cm), C=tall (15cm)",
+    ),
+):
+    """Full food analysis pipeline:
+    1. YOLO instance segmentation → detect food items + masks
+    2. MiDaS monocular depth → disparity map
+    3. Pinhole calibration + Riemann integration → volume (cm³)
+    4. Volume × density → mass (grams)
+
+    Returns JSON with per-detection and per-class results.
+    """
+    # ── Validate models ──────────────────────────────────────────────
+    if yolo_model is None:
         return JSONResponse(
-            content={"status": "error", "message": "Model not loaded. Check weights path."},
-            status_code=500
+            content={
+                "status": "error",
+                "message": "YOLO model not loaded. Check weights path on the Pi.",
+            },
+            status_code=500,
+        )
+    if midas_model is None:
+        return JSONResponse(
+            content={
+                "status": "error",
+                "message": "MiDaS model not loaded. Depth estimation unavailable.",
+            },
+            status_code=500,
         )
 
+    # ── Resolve depth calibration ────────────────────────────────────
+    k_depth_cm = K_DEPTH_MAP.get(depth_category.upper(), 10.0)
+
     try:
-        # Read image
+        t_start = time.time()
+
+        # ── Read image ───────────────────────────────────────────────
         image_bytes = await photo.read()
-        image = Image.open(io.BytesIO(image_bytes))
+        pil_image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
+        img_rgb = np.array(pil_image)
+        h, w = img_rgb.shape[:2]
 
-        # Run prediction
-        results = model.predict(source=image, conf=0.25, verbose=False)
+        # ── Pinhole XY calibration ───────────────────────────────────
+        cm_per_px = compute_cm_per_pixel(w)
+        cm2_per_px = cm_per_px ** 2
 
-        predictions = []
-        annotated_image_b64 = None
+        # ── Step 1: YOLO segmentation ────────────────────────────────
+        t_yolo = time.time()
+        results = yolo_model.predict(
+            source=pil_image,
+            conf=CONF_THRESHOLD,
+            verbose=False,
+            agnostic_nms=True,
+        )
+        t_yolo_done = time.time()
 
-        if len(results) > 0:
-            result = results[0]
+        result = results[0]
 
-            # Extract predictions
-            if result.boxes is not None:
-                for box in result.boxes:
-                    cls_id = int(box.cls[0].item())
-                    conf = float(box.conf[0].item())
-                    name = CLASS_NAMES[cls_id] if cls_id < len(CLASS_NAMES) else f"unknown_{cls_id}"
+        # Quick exit if nothing detected
+        if result.boxes is None or len(result.boxes) == 0:
+            return JSONResponse(content={
+                "status": "success",
+                "message": "No food items detected.",
+                "detections": [],
+                "by_class": {},
+                "totals": {
+                    "detected_items": 0,
+                    "unique_classes": 0,
+                    "total_volume_cm3": 0.0,
+                    "total_mass_grams": 0.0,
+                },
+                "timing": {
+                    "yolo_seconds": round(t_yolo_done - t_yolo, 3),
+                    "midas_seconds": 0.0,
+                    "total_seconds": round(time.time() - t_start, 3),
+                },
+            })
 
-                    predictions.append({
-                        "food_item": name,
-                        "confidence": round(conf, 4),
-                    })
+        has_masks = result.masks is not None
 
-            # Get the annotated image (rendered with boxes/masks)
-            plot_img = result.plot()
-            # Convert BGR to RGB for PIL
-            plot_rgb = plot_img[..., ::-1]
-            annotated_pil = Image.fromarray(plot_rgb)
+        # ── Step 2: MiDaS depth estimation ───────────────────────────
+        t_midas = time.time()
+        depth_map = estimate_depth(img_rgb)
+        t_midas_done = time.time()
 
-            # Save to buffer in JPEG format
-            buffer = io.BytesIO()
-            annotated_pil.save(buffer, format="JPEG")
-            annotated_image_b64 = base64.b64encode(buffer.getvalue()).decode("utf-8")
+        # ── Step 3: Extract detections, compute volume & mass ────────
+        detections = []
+        class_totals = {}  # name → {count, area, volume, mass}
+        det_idx = 0
+
+        for i, box in enumerate(result.boxes):
+            cls_id = int(box.cls[0].item())
+            conf = float(box.conf[0].item())
+            name = (
+                CLASS_NAMES[cls_id]
+                if cls_id < len(CLASS_NAMES)
+                else f"unknown_{cls_id}"
+            )
+            density = DENSITY.get(name, 0.80)
+
+            # Build binary mask from segmentation polygon
+            if has_masks and i < len(result.masks.xy):
+                poly_xy = result.masks.xy[i]
+                if len(poly_xy) == 0:
+                    continue
+                binary_mask = np.zeros((h, w), dtype=np.uint8)
+                cv2.fillPoly(
+                    binary_mask, [np.array(poly_xy, dtype=np.int32)], 1
+                )
+            else:
+                # Fallback: use bounding box as a rough mask
+                x1, y1, x2, y2 = box.xyxy[0].tolist()
+                binary_mask = np.zeros((h, w), dtype=np.uint8)
+                binary_mask[int(y1):int(y2), int(x1):int(x2)] = 1
+
+            # Area
+            area_px = int(binary_mask.sum())
+            area_cm2 = area_px * cm2_per_px
+
+            # Baseline depth (plate surface under this item)
+            d_base = compute_baseline_depth(depth_map, binary_mask)
+
+            # Volume via Riemann integration
+            volume_cm3 = compute_volume_cm3(
+                depth_map, binary_mask, cm2_per_px, d_base, k_depth_cm
+            )
+
+            # Mass = Volume × Density
+            mass_g = volume_cm3 * density
+
+            det_idx += 1
+            detections.append({
+                "index": det_idx,
+                "food_item": name,
+                "confidence": round(conf, 4),
+                "area_cm2": round(area_cm2, 1),
+                "volume_cm3": round(volume_cm3, 1),
+                "mass_grams": round(mass_g, 1),
+                "density_used": density,
+            })
+
+            # Accumulate per-class totals
+            if name not in class_totals:
+                class_totals[name] = {
+                    "count": 0,
+                    "total_area_cm2": 0.0,
+                    "total_volume_cm3": 0.0,
+                    "total_mass_grams": 0.0,
+                }
+            class_totals[name]["count"] += 1
+            class_totals[name]["total_area_cm2"] += area_cm2
+            class_totals[name]["total_volume_cm3"] += volume_cm3
+            class_totals[name]["total_mass_grams"] += mass_g
+
+        # Round class totals
+        for name in class_totals:
+            ct = class_totals[name]
+            ct["total_area_cm2"] = round(ct["total_area_cm2"], 1)
+            ct["total_volume_cm3"] = round(ct["total_volume_cm3"], 1)
+            ct["total_mass_grams"] = round(ct["total_mass_grams"], 1)
+
+        # Grand totals
+        total_volume = sum(d["volume_cm3"] for d in detections)
+        total_mass = sum(d["mass_grams"] for d in detections)
+
+        t_end = time.time()
 
         return JSONResponse(content={
             "status": "success",
-            "message": "Image analyzed successfully",
-            "predictions": predictions,
-            "detected_count": len(predictions),
-            "annotated_image": annotated_image_b64
+            "message": "Image analyzed successfully.",
+            "detections": detections,
+            "by_class": class_totals,
+            "totals": {
+                "detected_items": len(detections),
+                "unique_classes": len(class_totals),
+                "total_volume_cm3": round(total_volume, 1),
+                "total_mass_grams": round(total_mass, 1),
+            },
+            "calibration": {
+                "camera_distance_cm": CAMERA_DISTANCE_CM,
+                "hfov_degrees": CAMERA_HFOV_DEG,
+                "depth_category": depth_category.upper(),
+                "k_depth_cm": k_depth_cm,
+                "cm_per_pixel": round(cm_per_px, 5),
+                "image_size": {"width": w, "height": h},
+            },
+            "timing": {
+                "yolo_seconds": round(t_yolo_done - t_yolo, 3),
+                "midas_seconds": round(t_midas_done - t_midas, 3),
+                "total_seconds": round(t_end - t_start, 3),
+            },
         })
 
     except Exception as e:
         return JSONResponse(
             content={"status": "error", "message": str(e)},
-            status_code=500
+            status_code=500,
         )

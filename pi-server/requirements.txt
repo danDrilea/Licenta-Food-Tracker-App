@@ -1,0 +1,16 @@
+# AI Food Tracker — Raspberry Pi dependencies
+# Install: pip install -r requirements.txt
+#
+# NOTE for Raspberry Pi (aarch64):
+#   PyTorch must be installed separately from the official ARM wheels:
+#   pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+#   Then install the rest with this file.
+
+fastapi
+uvicorn[standard]
+python-multipart
+Pillow
+numpy
+opencv-python-headless
+ultralytics
+timm
