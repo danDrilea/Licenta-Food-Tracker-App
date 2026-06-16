@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, Pressable, TextInput, Alert } from 'react-nativ
 import Ionicons from '@expo/vector-icons/Ionicons';
 import NestableDraggableFlatList, { ScaleDecorator, RenderItemParams } from 'react-native-draggable-flatlist';
 import { MealSlot, MAX_MEALS } from '../../types/settings';
+import { useThemeColors } from '../../types/theme';
 
 interface MealEditorProps {
   meals: MealSlot[];
@@ -23,6 +24,7 @@ export default function MealEditor({
   const [editName, setEditName] = useState('');
   const [isAdding, setIsAdding] = useState(false);
   const [newName, setNewName] = useState('');
+  const theme = useThemeColors();
 
   const canAdd = meals.length < MAX_MEALS;
 
@@ -65,12 +67,12 @@ export default function MealEditor({
         <View
           style={[
             styles.mealRow,
-            index < meals.length - 1 && styles.mealRowBorder,
-            isActive && { backgroundColor: '#2a2d35' },
+            index < meals.length - 1 && [styles.mealRowBorder, { borderBottomColor: theme.border }],
+            isActive && { backgroundColor: theme.rowPressed },
           ]}
         >
           <Pressable onPressIn={drag} style={styles.dragHandle} hitSlop={8}>
-            <Ionicons name="menu-outline" size={20} color="#6b7280" />
+            <Ionicons name="menu-outline" size={20} color={theme.textDim} />
           </Pressable>
 
           <View style={styles.mealIcon}>
@@ -80,12 +82,12 @@ export default function MealEditor({
           {editingId === meal.id ? (
             <View style={styles.editRow}>
               <TextInput
-                style={styles.editInput}
+                style={[styles.editInput, { color: theme.textPrimary }]}
                 value={editName}
                 onChangeText={setEditName}
                 autoFocus
                 maxLength={20}
-                placeholderTextColor="#4b5563"
+                placeholderTextColor={theme.textDimmer}
                 onSubmitEditing={saveEdit}
                 onBlur={saveEdit}
               />
@@ -95,10 +97,10 @@ export default function MealEditor({
             </View>
           ) : (
             <View style={styles.displayRow}>
-              <Text style={styles.mealName}>{meal.name}</Text>
+              <Text style={[styles.mealName, { color: theme.textSecondary }]}>{meal.name}</Text>
               <View style={styles.actions}>
                 <Pressable onPress={() => startEdit(meal)} hitSlop={8} style={styles.actionBtn}>
-                  <Ionicons name="pencil-outline" size={16} color="#6b7280" />
+                  <Ionicons name="pencil-outline" size={16} color={theme.textDim} />
                 </Pressable>
                 <Pressable onPress={() => confirmRemove(meal)} hitSlop={8} style={styles.actionBtn}>
                   <Ionicons name="trash-outline" size={16} color="#ef4444" />
@@ -114,11 +116,11 @@ export default function MealEditor({
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.sectionTitle}>Meals</Text>
-        <Text style={styles.counter}>{meals.length} / {MAX_MEALS}</Text>
+        <Text style={[styles.sectionTitle, { color: theme.textMuted }]}>Meals</Text>
+        <Text style={[styles.counter, { color: theme.textDim }]}>{meals.length} / {MAX_MEALS}</Text>
       </View>
 
-      <View style={styles.card}>
+      <View style={[styles.card, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
         <NestableDraggableFlatList
           data={meals}
           onDragEnd={({ data }) => onUpdateMeals(data)}
@@ -128,13 +130,13 @@ export default function MealEditor({
 
         {isAdding ? (
           <View style={styles.addRow}>
-            <Ionicons name="fast-food-outline" size={18} color="#6b7280" style={styles.addIcon} />
+            <Ionicons name="fast-food-outline" size={18} color={theme.textDim} style={styles.addIcon} />
             <TextInput
-              style={styles.editInput}
+              style={[styles.editInput, { color: theme.textPrimary }]}
               value={newName}
               onChangeText={setNewName}
               placeholder="Meal name..."
-              placeholderTextColor="#4b5563"
+              placeholderTextColor={theme.textDimmer}
               autoFocus
               maxLength={20}
               onSubmitEditing={handleAdd}
@@ -143,20 +145,20 @@ export default function MealEditor({
               <Ionicons name="checkmark-circle" size={22} color="#4ade80" />
             </Pressable>
             <Pressable onPress={() => { setIsAdding(false); setNewName(''); }} hitSlop={8}>
-              <Ionicons name="close-circle" size={22} color="#6b7280" />
+              <Ionicons name="close-circle" size={22} color={theme.textDim} />
             </Pressable>
           </View>
         ) : canAdd ? (
           <Pressable
-            style={({ pressed }) => [styles.addButton, pressed && styles.addButtonPressed]}
+            style={({ pressed }) => [styles.addButton, { borderTopColor: theme.border }, pressed && styles.addButtonPressed]}
             onPress={() => setIsAdding(true)}
           >
             <Ionicons name="add-circle-outline" size={20} color="#8b5cf6" />
             <Text style={styles.addButtonText}>Add meal</Text>
           </Pressable>
         ) : (
-          <View style={styles.maxReached}>
-            <Text style={styles.maxText}>Maximum {MAX_MEALS} meals reached</Text>
+          <View style={[styles.maxReached, { borderTopColor: theme.border }]}>
+            <Text style={[styles.maxText, { color: theme.textDimmer }]}>Maximum {MAX_MEALS} meals reached</Text>
           </View>
         )}
       </View>
@@ -176,22 +178,18 @@ const styles = StyleSheet.create({
     marginLeft: 4,
   },
   sectionTitle: {
-    color: '#9ca3af',
     fontSize: 12,
     fontWeight: '700',
     textTransform: 'uppercase',
     letterSpacing: 0.8,
   },
   counter: {
-    color: '#6b7280',
     fontSize: 12,
     fontWeight: '500',
   },
   card: {
-    backgroundColor: '#1e2126',
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#2a2d35',
     overflow: 'hidden',
   },
   mealRow: {
@@ -203,7 +201,6 @@ const styles = StyleSheet.create({
   },
   mealRowBorder: {
     borderBottomWidth: 1,
-    borderBottomColor: '#2a2d35',
   },
   dragHandle: {
     padding: 4,
@@ -224,7 +221,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   mealName: {
-    color: '#e5e7eb',
     fontSize: 15,
     fontWeight: '500',
   },
@@ -243,7 +239,6 @@ const styles = StyleSheet.create({
   },
   editInput: {
     flex: 1,
-    color: '#ffffff',
     fontSize: 15,
     fontWeight: '500',
     borderBottomWidth: 1,
@@ -267,7 +262,6 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingVertical: 14,
     borderTopWidth: 1,
-    borderTopColor: '#2a2d35',
   },
   addButtonPressed: {
     backgroundColor: 'rgba(139, 92, 246, 0.08)',
@@ -281,10 +275,8 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     alignItems: 'center',
     borderTopWidth: 1,
-    borderTopColor: '#2a2d35',
   },
   maxText: {
-    color: '#4b5563',
     fontSize: 12,
     fontWeight: '500',
   },

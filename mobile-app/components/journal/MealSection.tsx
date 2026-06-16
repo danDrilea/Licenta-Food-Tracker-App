@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { useThemeColors } from '../../types/theme';
 
 interface FoodItem {
   id: string;
@@ -28,19 +29,20 @@ interface MealSectionProps {
 export default function MealSection({ meal, onAddFood, onEditFood }: MealSectionProps) {
   const totalCalories = meal.items.reduce((sum, item) => sum + item.calories, 0);
   const hasItems = meal.items.length > 0;
+  const theme = useThemeColors();
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
       {/* Meal header */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
           <View style={styles.iconCircle}>
             <Ionicons name={meal.icon} size={18} color="#c77ffb" />
           </View>
-          <Text style={styles.mealName}>{meal.name}</Text>
+          <Text style={[styles.mealName, { color: theme.textPrimary }]}>{meal.name}</Text>
         </View>
 
-        <Text style={styles.totalCal}>
+        <Text style={[styles.totalCal, { color: theme.textMuted }]}>
           {hasItems ? `${totalCalories} kcal` : ''}
         </Text>
       </View>
@@ -53,19 +55,19 @@ export default function MealSection({ meal, onAddFood, onEditFood }: MealSection
               key={item.id}
               style={({ pressed }) => [
                 styles.foodItem,
-                index < meal.items.length - 1 && styles.foodItemBorder,
+                index < meal.items.length - 1 && [styles.foodItemBorder, { borderBottomColor: theme.border }],
                 pressed && styles.foodItemPressed,
               ]}
               onPress={() => onEditFood?.(item)}
             >
               <View style={styles.foodInfo}>
-                <Text style={styles.foodName}>{item.name}</Text>
-                <Text style={styles.foodAmount}>{item.amount}</Text>
+                <Text style={[styles.foodName, { color: theme.textSecondary }]}>{item.name}</Text>
+                <Text style={[styles.foodAmount, { color: theme.textDim }]}>{item.amount}</Text>
               </View>
               <View style={styles.foodRight}>
                 <View style={styles.calCol}>
-                  <Text style={styles.foodCalories}>{item.calories}</Text>
-                  <Text style={styles.foodCalUnit}>kcal</Text>
+                  <Text style={[styles.foodCalories, { color: theme.textPrimary }]}>{item.calories}</Text>
+                  <Text style={[styles.foodCalUnit, { color: theme.textDim }]}>kcal</Text>
                 </View>
                 <Ionicons name="create-outline" size={16} color="#c77ffb" style={styles.editIcon} />
               </View>
@@ -74,7 +76,7 @@ export default function MealSection({ meal, onAddFood, onEditFood }: MealSection
         </View>
       ) : (
         <View style={styles.emptyState}>
-          <Text style={styles.emptyText}>No food logged</Text>
+          <Text style={[styles.emptyText, { color: theme.textDimmer }]}>No food logged</Text>
         </View>
       )}
 
@@ -82,6 +84,7 @@ export default function MealSection({ meal, onAddFood, onEditFood }: MealSection
       <Pressable
         style={({ pressed }) => [
           styles.addButton,
+          { borderTopColor: theme.border },
           pressed && styles.addButtonPressed,
         ]}
         onPress={onAddFood}
@@ -95,10 +98,8 @@ export default function MealSection({ meal, onAddFood, onEditFood }: MealSection
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#1e2126',
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#2a2d35',
     overflow: 'hidden',
   },
   header: {
@@ -122,12 +123,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   mealName: {
-    color: '#ffffff',
     fontSize: 16,
     fontWeight: '700',
   },
   totalCal: {
-    color: '#9ca3af',
     fontSize: 14,
     fontWeight: '600',
   },
@@ -148,18 +147,15 @@ const styles = StyleSheet.create({
   },
   foodItemBorder: {
     borderBottomWidth: 1,
-    borderBottomColor: '#2a2d35',
   },
   foodInfo: {
     flex: 1,
   },
   foodName: {
-    color: '#e5e7eb',
     fontSize: 14,
     fontWeight: '500',
   },
   foodAmount: {
-    color: '#6b7280',
     fontSize: 12,
     fontWeight: '400',
     marginTop: 2,
@@ -173,7 +169,6 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   foodCalories: {
-    color: '#ffffff',
     fontSize: 15,
     fontWeight: '600',
   },
@@ -182,7 +177,6 @@ const styles = StyleSheet.create({
     opacity: 0.8,
   },
   foodCalUnit: {
-    color: '#6b7280',
     fontSize: 11,
     fontWeight: '500',
   },
@@ -191,7 +185,6 @@ const styles = StyleSheet.create({
     paddingLeft: 60,
   },
   emptyText: {
-    color: '#4b5563',
     fontSize: 13,
     fontStyle: 'italic',
   },
@@ -202,7 +195,6 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingVertical: 12,
     borderTopWidth: 1,
-    borderTopColor: '#2a2d35',
   },
   addButtonPressed: {
     backgroundColor: 'rgba(139, 92, 246, 0.08)',

@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { UserProfile, ACTIVITY_LABELS, calculateAge } from '../../types/profile';
+import { useThemeColors } from '../../types/theme';
 
 interface UserInfoSectionProps {
   user: UserProfile;
@@ -15,30 +16,32 @@ interface InfoRowProps {
 }
 
 function InfoRow({ label, value, icon }: InfoRowProps) {
+  const theme = useThemeColors();
   return (
-    <View style={styles.row}>
+    <View style={[styles.row, { borderBottomColor: theme.border }]}>
       <View style={styles.rowLeft}>
         <Ionicons name={icon} size={16} color="#8b5cf6" />
-        <Text style={styles.rowLabel}>{label}</Text>
+        <Text style={[styles.rowLabel, { color: theme.textMuted }]}>{label}</Text>
       </View>
-      <Text style={styles.rowValue}>{value}</Text>
+      <Text style={[styles.rowValue, { color: theme.textSecondary }]}>{value}</Text>
     </View>
   );
 }
 
 export default function UserInfoSection({ user, onEditPress }: UserInfoSectionProps) {
   const age = calculateAge(user.dateOfBirth);
+  const theme = useThemeColors();
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.sectionTitle}>Personal Info</Text>
+        <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>Personal Info</Text>
         <Pressable onPress={onEditPress} hitSlop={10}>
           <Ionicons name="create-outline" size={20} color="#8b5cf6" />
         </Pressable>
       </View>
 
-      <View style={styles.card}>
+      <View style={[styles.card, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
         <InfoRow icon="person-outline" label="Name" value={`${user.firstName} ${user.lastName}`} />
         <InfoRow icon="calendar-outline" label="Age" value={`${age} years`} />
         <InfoRow icon="flag-outline" label="Country" value={user.country} />
@@ -62,16 +65,13 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   sectionTitle: {
-    color: '#ffffff',
     fontSize: 17,
     fontWeight: '700',
   },
   card: {
-    backgroundColor: '#1e2126',
     borderRadius: 16,
     padding: 4,
     borderWidth: 1,
-    borderColor: '#2a2d35',
   },
   row: {
     flexDirection: 'row',
@@ -80,7 +80,6 @@ const styles = StyleSheet.create({
     paddingVertical: 13,
     paddingHorizontal: 14,
     borderBottomWidth: 1,
-    borderBottomColor: '#2a2d35',
   },
   rowLeft: {
     flexDirection: 'row',
@@ -88,12 +87,10 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   rowLabel: {
-    color: '#9ca3af',
     fontSize: 14,
     fontWeight: '500',
   },
   rowValue: {
-    color: '#e5e7eb',
     fontSize: 14,
     fontWeight: '600',
   },

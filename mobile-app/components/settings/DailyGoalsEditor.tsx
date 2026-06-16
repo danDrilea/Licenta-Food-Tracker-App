@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, TextInput, Pressable } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { DailyGoals } from '../../types/settings';
+import { useThemeColors } from '../../types/theme';
 
 interface DailyGoalsEditorProps {
   goals: DailyGoals;
@@ -21,6 +22,7 @@ interface GoalFieldProps {
 function GoalField({ label, value, unit, color, onChange, max, isLast }: GoalFieldProps) {
   const [editing, setEditing] = useState(false);
   const [text, setText] = useState(value.toString());
+  const theme = useThemeColors();
 
   const save = () => {
     let num = parseInt(text, 10);
@@ -34,16 +36,16 @@ function GoalField({ label, value, unit, color, onChange, max, isLast }: GoalFie
   };
 
   return (
-    <View style={[styles.field, !isLast && styles.fieldBorder]}>
+    <View style={[styles.field, !isLast && [styles.fieldBorder, { borderBottomColor: theme.border }]]}>
       <View style={styles.fieldLeft}>
         <View style={[styles.dot, { backgroundColor: color }]} />
-        <Text style={styles.fieldLabel}>{label}</Text>
+        <Text style={[styles.fieldLabel, { color: theme.textSecondary }]}>{label}</Text>
       </View>
 
       {editing ? (
         <View style={styles.editWrap}>
           <TextInput
-            style={styles.fieldInput}
+            style={[styles.fieldInput, { color: theme.textPrimary }]}
             value={text}
             onChangeText={setText}
             keyboardType="numeric"
@@ -52,13 +54,13 @@ function GoalField({ label, value, unit, color, onChange, max, isLast }: GoalFie
             onBlur={save}
             selectTextOnFocus
           />
-          <Text style={styles.fieldUnit}>{unit}</Text>
+          <Text style={[styles.fieldUnit, { color: theme.textDim }]}>{unit}</Text>
         </View>
       ) : (
         <Pressable onPress={() => { setEditing(true); setText(value.toString()); }} style={styles.valueWrap}>
-          <Text style={styles.fieldValue}>{value}</Text>
-          <Text style={styles.fieldUnit}>{unit}</Text>
-          <Ionicons name="pencil-outline" size={14} color="#4b5563" />
+          <Text style={[styles.fieldValue, { color: theme.textPrimary }]}>{value}</Text>
+          <Text style={[styles.fieldUnit, { color: theme.textDim }]}>{unit}</Text>
+          <Ionicons name="pencil-outline" size={14} color={theme.textDimmer} />
         </Pressable>
       )}
     </View>
@@ -69,11 +71,12 @@ export default function DailyGoalsEditor({ goals, onSave }: DailyGoalsEditorProp
   const update = (key: keyof DailyGoals, value: number) => {
     onSave({ ...goals, [key]: value });
   };
+  const theme = useThemeColors();
 
   return (
     <View style={styles.container}>
-      <Text style={styles.groupTitle}>Daily Goals</Text>
-      <View style={styles.card}>
+      <Text style={[styles.groupTitle, { color: theme.textMuted }]}>Daily Goals</Text>
+      <View style={[styles.card, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
         <GoalField label="Calories" value={goals.calories} unit="kcal" color="#8b5cf6" onChange={(v) => update('calories', v)} />
         <GoalField label="Protein" value={goals.protein} unit="g" color="#818cf8" onChange={(v) => update('protein', v)} />
         <GoalField label="Carbs" value={goals.carbs} unit="g" color="#f59e0b" onChange={(v) => update('carbs', v)} />
@@ -89,7 +92,6 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   groupTitle: {
-    color: '#9ca3af',
     fontSize: 12,
     fontWeight: '700',
     textTransform: 'uppercase',
@@ -98,10 +100,8 @@ const styles = StyleSheet.create({
     marginLeft: 4,
   },
   card: {
-    backgroundColor: '#1e2126',
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#2a2d35',
     overflow: 'hidden',
   },
   field: {
@@ -113,7 +113,6 @@ const styles = StyleSheet.create({
   },
   fieldBorder: {
     borderBottomWidth: 1,
-    borderBottomColor: '#2a2d35',
   },
   fieldLeft: {
     flexDirection: 'row',
@@ -126,7 +125,6 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   fieldLabel: {
-    color: '#e5e7eb',
     fontSize: 15,
     fontWeight: '500',
   },
@@ -141,17 +139,14 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   fieldValue: {
-    color: '#ffffff',
     fontSize: 16,
     fontWeight: '700',
   },
   fieldUnit: {
-    color: '#6b7280',
     fontSize: 13,
     fontWeight: '500',
   },
   fieldInput: {
-    color: '#ffffff',
     fontSize: 16,
     fontWeight: '700',
     borderBottomWidth: 1,

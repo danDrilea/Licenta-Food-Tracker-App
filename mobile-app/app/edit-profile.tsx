@@ -4,6 +4,7 @@ import { useRouter, Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useProfile } from '../hooks/useProfile';
 import { ACTIVITY_LABELS, ActivityLevel, Sex } from '../types/profile';
+import { useThemeColors } from '../types/theme';
 
 const COUNTRIES = [
   "Afghanistan", "Albania", "Algeria", "Andorra", "Angola", "Antigua and Barbuda", "Argentina", "Armenia", "Australia", "Austria",
@@ -40,6 +41,7 @@ interface WheelPickerProps {
 function WheelPicker({ data, selectedValue, onValueChange, label }: WheelPickerProps) {
   const flatListRef = useRef<FlatList>(null);
   const extendedData = useMemo(() => [0, 0, ...data, 0, 0], [data]);
+  const theme = useThemeColors();
 
   useEffect(() => {
     const index = data.indexOf(selectedValue);
@@ -60,7 +62,7 @@ function WheelPicker({ data, selectedValue, onValueChange, label }: WheelPickerP
 
   return (
     <View style={styles.wheelWrapper}>
-      {label && <Text style={styles.wheelLabel}>{label}</Text>}
+      {label && <Text style={[styles.wheelLabel, { color: theme.textDim }]}>{label}</Text>}
       <View style={styles.wheelContainer}>
         <View style={styles.selectionHighlight} />
         <FlatList
@@ -76,7 +78,7 @@ function WheelPicker({ data, selectedValue, onValueChange, label }: WheelPickerP
             const isSelected = item === selectedValue;
             return (
               <View style={styles.wheelItem}>
-                <Text style={[styles.wheelItemText, isSelected && styles.wheelItemTextActive]}>{item}</Text>
+                <Text style={[styles.wheelItemText, { color: theme.textDimmer }, isSelected && [styles.wheelItemTextActive, { color: theme.textPrimary }]]}>{item}</Text>
               </View>
             );
           }}
@@ -90,6 +92,7 @@ function WheelPicker({ data, selectedValue, onValueChange, label }: WheelPickerP
 export default function EditProfileScreen() {
   const router = useRouter();
   const { profile, updateProfile } = useProfile();
+  const theme = useThemeColors();
 
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -153,53 +156,53 @@ export default function EditProfileScreen() {
   return (
     <KeyboardAvoidingView 
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={styles.container}
+      style={[styles.container, { backgroundColor: theme.background }]}
     >
       <Stack.Screen options={{
         title: 'Edit Profile',
-        headerStyle: { backgroundColor: '#1e2126' },
-        headerTintColor: '#ffffff',
+        headerStyle: { backgroundColor: theme.cardBg },
+        headerTintColor: theme.textPrimary,
         headerLeft: () => (
           <TouchableOpacity onPress={() => router.back()}>
-            <Ionicons name="close" size={24} color="#ffffff" />
+            <Ionicons name="close" size={24} color={theme.textPrimary} />
           </TouchableOpacity>
         ),
       }} />
 
       <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
         {/* Name */}
-        <Text style={styles.sectionLabel}>NAME</Text>
-        <View style={styles.inputCard}>
+        <Text style={[styles.sectionLabel, { color: theme.textMuted }]}>NAME</Text>
+        <View style={[styles.inputCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
           <View style={styles.inputRow}>
             <View style={styles.inputWrapper}>
-              <Text style={styles.fieldLabel}>First Name</Text>
-              <TextInput style={styles.input} value={firstName} onChangeText={setFirstName}
-                placeholder="First Name" placeholderTextColor="#4b5563" />
+              <Text style={[styles.fieldLabel, { color: theme.textDim }]}>First Name</Text>
+              <TextInput style={[styles.input, { color: theme.textPrimary }]} value={firstName} onChangeText={setFirstName}
+                placeholder="First Name" placeholderTextColor={theme.textDimmer} />
             </View>
             <View style={styles.inputWrapper}>
-              <Text style={styles.fieldLabel}>Last Name</Text>
-              <TextInput style={styles.input} value={lastName} onChangeText={setLastName}
-                placeholder="Last Name" placeholderTextColor="#4b5563" />
+              <Text style={[styles.fieldLabel, { color: theme.textDim }]}>Last Name</Text>
+              <TextInput style={[styles.input, { color: theme.textPrimary }]} value={lastName} onChangeText={setLastName}
+                placeholder="Last Name" placeholderTextColor={theme.textDimmer} />
             </View>
           </View>
         </View>
 
         {/* Personal Info */}
         <View style={styles.section}>
-          <Text style={styles.sectionLabel}>PERSONAL INFO</Text>
-          <View style={styles.inputCard}>
+          <Text style={[styles.sectionLabel, { color: theme.textMuted }]}>PERSONAL INFO</Text>
+          <View style={[styles.inputCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
             <Pressable style={styles.fieldRow} onPress={() => setShowDatePicker(true)}>
-              <Text style={styles.fieldLabel}>Date of Birth</Text>
+              <Text style={[styles.fieldLabel, { color: theme.textDim }]}>Date of Birth</Text>
               <View style={styles.fieldValueRow}>
-                <Text style={[styles.fieldValue, !dob && styles.placeholder]}>{dob || 'Select Date'}</Text>
+                <Text style={[styles.fieldValue, { color: theme.textPrimary }, !dob && { color: theme.textDimmer }]}>{dob || 'Select Date'}</Text>
                 <Ionicons name="calendar-outline" size={16} color="#8b5cf6" />
               </View>
             </Pressable>
-            <View style={styles.fieldDivider} />
+            <View style={[styles.fieldDivider, { backgroundColor: theme.border }]} />
             <Pressable style={styles.fieldRow} onPress={() => setShowCountryPicker(true)}>
-              <Text style={styles.fieldLabel}>Country</Text>
+              <Text style={[styles.fieldLabel, { color: theme.textDim }]}>Country</Text>
               <View style={styles.fieldValueRow}>
-                <Text style={[styles.fieldValue, !country && styles.placeholder]} numberOfLines={1}>
+                <Text style={[styles.fieldValue, { color: theme.textPrimary }, !country && { color: theme.textDimmer }]} numberOfLines={1}>
                   {country || 'Select Country'}
                 </Text>
                 <Ionicons name="chevron-down" size={16} color="#8b5cf6" />
@@ -210,39 +213,39 @@ export default function EditProfileScreen() {
 
         {/* Sex */}
         <View style={styles.section}>
-          <Text style={styles.sectionLabel}>SEX</Text>
-          <View style={styles.segmentedControl}>
+          <Text style={[styles.sectionLabel, { color: theme.textMuted }]}>SEX</Text>
+          <View style={[styles.segmentedControl, { backgroundColor: theme.cardBg }]}>
             <Pressable style={[styles.segment, sex === 'male' && styles.segmentActive]} onPress={() => setSex('male')}>
-              <Ionicons name="male" size={18} color={sex === 'male' ? '#ffffff' : '#9ca3af'} />
-              <Text style={[styles.segmentText, sex === 'male' && styles.segmentTextActive]}>Male</Text>
+              <Ionicons name="male" size={18} color={sex === 'male' ? '#ffffff' : theme.textMuted} />
+              <Text style={[styles.segmentText, { color: theme.textMuted }, sex === 'male' && styles.segmentTextActive]}>Male</Text>
             </Pressable>
             <Pressable style={[styles.segment, sex === 'female' && styles.segmentActive]} onPress={() => setSex('female')}>
-              <Ionicons name="female" size={18} color={sex === 'female' ? '#ffffff' : '#9ca3af'} />
-              <Text style={[styles.segmentText, sex === 'female' && styles.segmentTextActive]}>Female</Text>
+              <Ionicons name="female" size={18} color={sex === 'female' ? '#ffffff' : theme.textMuted} />
+              <Text style={[styles.segmentText, { color: theme.textMuted }, sex === 'female' && styles.segmentTextActive]}>Female</Text>
             </Pressable>
           </View>
         </View>
 
         {/* Body */}
         <View style={styles.section}>
-          <Text style={styles.sectionLabel}>BODY DETAILS</Text>
-          <View style={styles.inputCard}>
+          <Text style={[styles.sectionLabel, { color: theme.textMuted }]}>BODY DETAILS</Text>
+          <View style={[styles.inputCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
             <View style={styles.fieldRow}>
-              <Text style={styles.fieldLabel}>Height (cm)</Text>
-              <TextInput style={styles.fieldInput} value={heightCm} onChangeText={setHeightCm}
-                keyboardType="numeric" placeholder="175" placeholderTextColor="#4b5563" />
+              <Text style={[styles.fieldLabel, { color: theme.textDim }]}>Height (cm)</Text>
+              <TextInput style={[styles.fieldInput, { color: theme.textPrimary }]} value={heightCm} onChangeText={setHeightCm}
+                keyboardType="numeric" placeholder="175" placeholderTextColor={theme.textDimmer} />
             </View>
           </View>
         </View>
 
         {/* Activity Level */}
         <View style={styles.section}>
-          <Text style={styles.sectionLabel}>ACTIVITY LEVEL</Text>
-          <Pressable style={styles.inputCard} onPress={() => setShowActivityPicker(true)}>
+          <Text style={[styles.sectionLabel, { color: theme.textMuted }]}>ACTIVITY LEVEL</Text>
+          <Pressable style={[styles.inputCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]} onPress={() => setShowActivityPicker(true)}>
             <View style={styles.fieldRow}>
-              <Text style={styles.fieldLabel}>Daily Activity</Text>
+              <Text style={[styles.fieldLabel, { color: theme.textDim }]}>Daily Activity</Text>
               <View style={styles.fieldValueRow}>
-                <Text style={styles.fieldValue}>{ACTIVITY_LABELS[activityLevel]}</Text>
+                <Text style={[styles.fieldValue, { color: theme.textPrimary }]}>{ACTIVITY_LABELS[activityLevel]}</Text>
                 <Ionicons name="chevron-forward" size={16} color="#8b5cf6" />
               </View>
             </View>
@@ -262,18 +265,18 @@ export default function EditProfileScreen() {
 
       {/* Country Picker Modal */}
       <Modal visible={showCountryPicker} transparent animationType="slide">
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+        <View style={[styles.modalOverlay, { backgroundColor: theme.overlay }]}>
+          <View style={[styles.modalContent, { backgroundColor: theme.cardBg }]}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Select Country</Text>
+              <Text style={[styles.modalTitle, { color: theme.textPrimary }]}>Select Country</Text>
               <Pressable onPress={() => setShowCountryPicker(false)}>
-                <Ionicons name="close" size={24} color="#ffffff" />
+                <Ionicons name="close" size={24} color={theme.textPrimary} />
               </Pressable>
             </View>
-            <View style={styles.searchBar}>
-              <Ionicons name="search" size={18} color="#6b7280" />
-              <TextInput style={styles.searchInput} placeholder="Search country..."
-                placeholderTextColor="#6b7280" value={countrySearch}
+            <View style={[styles.searchBar, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder }]}>
+              <Ionicons name="search" size={18} color={theme.textDim} />
+              <TextInput style={[styles.searchInput, { color: theme.textPrimary }]} placeholder="Search country..."
+                placeholderTextColor={theme.textDim} value={countrySearch}
                 onChangeText={setCountrySearch} autoFocus />
             </View>
             <FlatList
@@ -284,7 +287,7 @@ export default function EditProfileScreen() {
                   style={[styles.modalItem, country === item && styles.modalItemActive]}
                   onPress={() => { setCountry(item); setShowCountryPicker(false); setCountrySearch(''); }}
                 >
-                  <Text style={[styles.modalItemText, country === item && styles.modalItemTextActive]}>{item}</Text>
+                  <Text style={[styles.modalItemText, { color: theme.textMuted }, country === item && styles.modalItemTextActive]}>{item}</Text>
                   {country === item && <Ionicons name="checkmark" size={20} color="#8b5cf6" />}
                 </Pressable>
               )}
@@ -296,12 +299,12 @@ export default function EditProfileScreen() {
 
       {/* Activity Picker Modal */}
       <Modal visible={showActivityPicker} transparent animationType="slide">
-        <Pressable style={styles.modalOverlay} onPress={() => setShowActivityPicker(false)}>
-          <View style={styles.modalContent}>
+        <Pressable style={[styles.modalOverlay, { backgroundColor: theme.overlay }]} onPress={() => setShowActivityPicker(false)}>
+          <View style={[styles.modalContent, { backgroundColor: theme.cardBg }]}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Activity Level</Text>
+              <Text style={[styles.modalTitle, { color: theme.textPrimary }]}>Activity Level</Text>
               <Pressable onPress={() => setShowActivityPicker(false)}>
-                <Ionicons name="close" size={24} color="#ffffff" />
+                <Ionicons name="close" size={24} color={theme.textPrimary} />
               </Pressable>
             </View>
             <ScrollView style={styles.modalList}>
@@ -311,7 +314,7 @@ export default function EditProfileScreen() {
                   style={[styles.modalItem, activityLevel === level && styles.modalItemActive]}
                   onPress={() => { setActivityLevel(level); setShowActivityPicker(false); }}
                 >
-                  <Text style={[styles.modalItemText, activityLevel === level && styles.modalItemTextActive]}>
+                  <Text style={[styles.modalItemText, { color: theme.textMuted }, activityLevel === level && styles.modalItemTextActive]}>
                     {ACTIVITY_LABELS[level]}
                   </Text>
                   {activityLevel === level && <Ionicons name="checkmark" size={20} color="#8b5cf6" />}
@@ -324,12 +327,12 @@ export default function EditProfileScreen() {
 
       {/* Date Picker Modal (Wheel) */}
       <Modal visible={showDatePicker} transparent animationType="slide">
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { height: 420 }]}>
+        <View style={[styles.modalOverlay, { backgroundColor: theme.overlay }]}>
+          <View style={[styles.modalContent, { backgroundColor: theme.cardBg, height: 420 }]}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Birth Date</Text>
+              <Text style={[styles.modalTitle, { color: theme.textPrimary }]}>Birth Date</Text>
               <TouchableOpacity onPress={() => setShowDatePicker(false)}>
-                <Text style={styles.cancelText}>Cancel</Text>
+                <Text style={[styles.cancelText, { color: theme.textMuted }]}>Cancel</Text>
               </TouchableOpacity>
             </View>
             <View style={styles.wheelsRow}>
@@ -352,37 +355,25 @@ export default function EditProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#25292e',
   },
   scrollContent: {
     padding: 20,
   },
-  saveBtn: {
-    color: '#8b5cf6',
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  saveBtnDisabled: {
-    opacity: 0.5,
-  },
-  // Section layout — matches edit-goal
+  // Section layout
   section: {
     marginTop: 24,
   },
   sectionLabel: {
-    color: '#9ca3af',
     fontSize: 12,
     fontWeight: '700',
     letterSpacing: 1,
     marginBottom: 12,
   },
-  // Input cards — matches edit-goal
+  // Input cards
   inputCard: {
-    backgroundColor: '#1e2126',
     borderRadius: 16,
     padding: 16,
     borderWidth: 1,
-    borderColor: '#2a2d35',
   },
   inputRow: {
     flexDirection: 'row',
@@ -392,14 +383,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   fieldLabel: {
-    color: '#6b7280',
     fontSize: 11,
     fontWeight: '600',
     textTransform: 'uppercase',
     marginBottom: 6,
   },
   input: {
-    color: '#ffffff',
     fontSize: 16,
     fontWeight: '500',
     height: 24,
@@ -416,12 +405,10 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   fieldValue: {
-    color: '#ffffff',
     fontSize: 15,
     fontWeight: '600',
   },
   fieldInput: {
-    color: '#ffffff',
     fontSize: 16,
     fontWeight: '600',
     textAlign: 'right',
@@ -431,16 +418,11 @@ const styles = StyleSheet.create({
   },
   fieldDivider: {
     height: 1,
-    backgroundColor: '#2a2d35',
     marginVertical: 14,
   },
-  placeholder: {
-    color: '#4b5563',
-  },
-  // Segmented control — matches edit-goal
+  // Segmented control
   segmentedControl: {
     flexDirection: 'row',
-    backgroundColor: '#1e2126',
     borderRadius: 14,
     padding: 4,
     gap: 4,
@@ -458,14 +440,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#8b5cf6',
   },
   segmentText: {
-    color: '#9ca3af',
     fontSize: 14,
     fontWeight: '600',
   },
   segmentTextActive: {
     color: '#ffffff',
   },
-  // Bottom save — matches edit-goal
+  // Bottom save
   bottomSaveBtn: {
     backgroundColor: '#8b5cf6',
     height: 56,
@@ -492,11 +473,9 @@ const styles = StyleSheet.create({
   // Modal styles
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.7)',
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: '#1e2126',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     paddingTop: 20,
@@ -510,19 +489,16 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   modalTitle: {
-    color: '#ffffff',
     fontSize: 20,
     fontWeight: '700',
   },
   cancelText: {
-    color: '#9ca3af',
     fontSize: 15,
     fontWeight: '600',
   },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#25292e',
     marginHorizontal: 16,
     paddingHorizontal: 12,
     borderRadius: 12,
@@ -530,11 +506,9 @@ const styles = StyleSheet.create({
     gap: 10,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#374151',
   },
   searchInput: {
     flex: 1,
-    color: '#ffffff',
     fontSize: 16,
   },
   modalList: {
@@ -554,7 +528,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(139, 92, 246, 0.1)',
   },
   modalItemText: {
-    color: '#9ca3af',
     fontSize: 16,
     fontWeight: '500',
   },
@@ -574,7 +547,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   wheelLabel: {
-    color: '#6b7280',
     fontSize: 10,
     fontWeight: '800',
     textTransform: 'uppercase',
@@ -602,12 +574,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   wheelItemText: {
-    color: '#4b5563',
     fontSize: 18,
     fontWeight: '500',
   },
   wheelItemTextActive: {
-    color: '#ffffff',
     fontSize: 22,
     fontWeight: '800',
   },

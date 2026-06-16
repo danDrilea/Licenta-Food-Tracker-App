@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, Pressable, Image } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { useThemeColors } from '../../types/theme';
 
 interface ProfileHeaderProps {
   firstName: string;
@@ -11,6 +12,7 @@ interface ProfileHeaderProps {
 
 export default function ProfileHeader({ firstName, lastName, avatarUri, onEditPress }: ProfileHeaderProps) {
   const initials = `${firstName[0] || ''}${lastName[0] || ''}`.toUpperCase();
+  const theme = useThemeColors();
 
   return (
     <View style={styles.container}>
@@ -23,13 +25,13 @@ export default function ProfileHeader({ firstName, lastName, avatarUri, onEditPr
             <Text style={styles.initials}>{initials}</Text>
           )}
         </View>
-        <Pressable style={styles.cameraBtn} onPress={onEditPress}>
-          <Ionicons name="camera" size={14} color="#fff" />
+        <Pressable style={[styles.cameraBtn, { backgroundColor: theme.border, borderColor: theme.background }]} onPress={onEditPress}>
+          <Ionicons name="camera" size={14} color={theme.textPrimary} />
         </Pressable>
       </View>
 
       {/* Name */}
-      <Text style={styles.name}>{firstName} {lastName}</Text>
+      <Text style={[styles.name, { color: theme.textPrimary }]}>{firstName} {lastName}</Text>
     </View>
   );
 }
@@ -71,14 +73,11 @@ const styles = StyleSheet.create({
     width: 30,
     height: 30,
     borderRadius: 15,
-    backgroundColor: '#2a2d35',
     borderWidth: 2,
-    borderColor: '#25292e',
     justifyContent: 'center',
     alignItems: 'center',
   },
   name: {
-    color: '#ffffff',
     fontSize: 22,
     fontWeight: '700',
   },

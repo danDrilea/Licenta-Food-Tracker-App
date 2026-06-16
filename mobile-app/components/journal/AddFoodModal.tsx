@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, View, Text, Modal, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useThemeColors } from '../../types/theme';
 
 interface FoodData {
   name: string;
@@ -27,6 +28,7 @@ export default function AddFoodModal({ visible, mealName, initialData, onClose, 
   const [protein, setProtein] = useState('');
   const [carbs, setCarbs] = useState('');
   const [fat, setFat] = useState('');
+  const theme = useThemeColors();
 
   useEffect(() => {
     if (visible) {
@@ -89,44 +91,44 @@ export default function AddFoodModal({ visible, mealName, initialData, onClose, 
     <Modal visible={visible} animationType="slide" transparent>
       <KeyboardAvoidingView 
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.modalOverlay}
+        style={[styles.modalOverlay, { backgroundColor: theme.overlay }]}
       >
-        <View style={styles.modalContent}>
+        <View style={[styles.modalContent, { backgroundColor: theme.cardBg }]}>
           <View style={styles.header}>
-            <Text style={styles.title}>{isEditing ? 'Edit' : 'Add to'} {mealName}</Text>
+            <Text style={[styles.title, { color: theme.textPrimary }]}>{isEditing ? 'Edit' : 'Add to'} {mealName}</Text>
             <TouchableOpacity onPress={onClose} hitSlop={10}>
-              <Ionicons name="close" size={24} color="#9ca3af" />
+              <Ionicons name="close" size={24} color={theme.textMuted} />
             </TouchableOpacity>
           </View>
 
           <View style={styles.form}>
-            <Text style={styles.label}>Food Name</Text>
+            <Text style={[styles.label, { color: theme.textMuted }]}>Food Name</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.textPrimary }]}
               placeholder="e.g. Apple"
-              placeholderTextColor="#6b7280"
+              placeholderTextColor={theme.textDim}
               value={name}
               onChangeText={setName}
             />
 
             <View style={styles.row}>
               <View style={styles.flex1}>
-                <Text style={styles.label}>Amount</Text>
+                <Text style={[styles.label, { color: theme.textMuted }]}>Amount</Text>
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.textPrimary }]}
                   placeholder="e.g. 100g"
-                  placeholderTextColor="#6b7280"
+                  placeholderTextColor={theme.textDim}
                   value={amount}
                   onChangeText={setAmount}
                 />
               </View>
               <View style={{ width: 16 }} />
               <View style={styles.flex1}>
-                <Text style={styles.label}>Calories (kcal)</Text>
+                <Text style={[styles.label, { color: theme.textMuted }]}>Calories (kcal)</Text>
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.textPrimary }]}
                   placeholder="0"
-                  placeholderTextColor="#6b7280"
+                  placeholderTextColor={theme.textDim}
                   keyboardType="numeric"
                   value={calories}
                   onChangeText={setCalories}
@@ -136,11 +138,11 @@ export default function AddFoodModal({ visible, mealName, initialData, onClose, 
 
             <View style={styles.row}>
               <View style={styles.flex1}>
-                <Text style={styles.label}>Protein (g)</Text>
+                <Text style={[styles.label, { color: theme.textMuted }]}>Protein (g)</Text>
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.textPrimary }]}
                   placeholder="0"
-                  placeholderTextColor="#6b7280"
+                  placeholderTextColor={theme.textDim}
                   keyboardType="numeric"
                   value={protein}
                   onChangeText={setProtein}
@@ -148,11 +150,11 @@ export default function AddFoodModal({ visible, mealName, initialData, onClose, 
               </View>
               <View style={{ width: 16 }} />
               <View style={styles.flex1}>
-                <Text style={styles.label}>Carbs (g)</Text>
+                <Text style={[styles.label, { color: theme.textMuted }]}>Carbs (g)</Text>
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.textPrimary }]}
                   placeholder="0"
-                  placeholderTextColor="#6b7280"
+                  placeholderTextColor={theme.textDim}
                   keyboardType="numeric"
                   value={carbs}
                   onChangeText={setCarbs}
@@ -160,11 +162,11 @@ export default function AddFoodModal({ visible, mealName, initialData, onClose, 
               </View>
               <View style={{ width: 16 }} />
               <View style={styles.flex1}>
-                <Text style={styles.label}>Fat (g)</Text>
+                <Text style={[styles.label, { color: theme.textMuted }]}>Fat (g)</Text>
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.textPrimary }]}
                   placeholder="0"
-                  placeholderTextColor="#6b7280"
+                  placeholderTextColor={theme.textDim}
                   keyboardType="numeric"
                   value={fat}
                   onChangeText={setFat}
@@ -203,11 +205,9 @@ export default function AddFoodModal({ visible, mealName, initialData, onClose, 
 const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: '#1e2126',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: 24,
@@ -220,7 +220,6 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   title: {
-    color: '#ffffff',
     fontSize: 20,
     fontWeight: '700',
   },
@@ -235,17 +234,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   label: {
-    color: '#9ca3af',
     fontSize: 14,
     fontWeight: '500',
     marginBottom: 8,
   },
   input: {
-    backgroundColor: '#25292e',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#374151',
-    color: '#ffffff',
     paddingHorizontal: 16,
     height: 48,
     fontSize: 16,

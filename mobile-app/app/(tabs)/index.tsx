@@ -11,6 +11,7 @@ import { useFoodLogs } from '../../hooks/useFoodLogs';
 import { useDailyLogs } from '../../hooks/useDailyLogs';
 import { useWeeklyStats } from '../../hooks/useWeeklyStats';
 import { useRouter } from 'expo-router';
+import { useThemeColors } from '../../types/theme';
 import type { DashboardMealData } from '../../components/dashboard/MealSummary';
 
 function getGreeting(): string {
@@ -31,6 +32,7 @@ function getFormattedDate(): string {
 export default function DashboardScreen() {
   const { settings } = useSettings();
   const router = useRouter();
+  const colors = useThemeColors();
   
   // Format today's date local time
   const todayStr = useMemo(() => {
@@ -89,14 +91,14 @@ export default function DashboardScreen() {
 
   return (
     <ScrollView
-      style={styles.scrollView}
+      style={[styles.scrollView, { backgroundColor: colors.background }]}
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
     >
       {/* ─── Header ─── */}
       <View style={styles.header}>
-        <Text style={styles.greeting}>{getGreeting()} 👋</Text>
-        <Text style={styles.date}>{getFormattedDate()}</Text>
+        <Text style={[styles.greeting, { color: colors.textPrimary }]}>{getGreeting()} 👋</Text>
+        <Text style={[styles.date, { color: colors.textMuted }]}>{getFormattedDate()}</Text>
       </View>
 
       {/* ─── 1. Calorie Ring ─── */}
@@ -113,7 +115,7 @@ export default function DashboardScreen() {
       </View>
 
       {/* ─── 2. Macronutrients ─── */}
-      <View style={styles.card}>
+      <View style={[styles.card, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
         <MacroBreakdown
           protein={macros.protein}
           carbs={macros.carbs}
@@ -132,7 +134,7 @@ export default function DashboardScreen() {
       </View>
 
       {/* ─── 4. Water Intake ─── */}
-      <View style={styles.card}>
+      <View style={[styles.card, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
         <WaterTracker
           glasses={waterGlasses}
           onGlassesChange={setWaterGlasses}
@@ -142,7 +144,7 @@ export default function DashboardScreen() {
 
 
       {/* ─── 6. Weekly Overview ─── */}
-      <View style={styles.card}>
+      <View style={[styles.card, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
         <WeeklyChart
           data={weeklyCalories}
           goal={macros.calories.goal}
@@ -158,7 +160,6 @@ export default function DashboardScreen() {
 const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
-    backgroundColor: '#25292e',
   },
   content: {
     paddingHorizontal: 20,
@@ -168,13 +169,11 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   greeting: {
-    color: '#ffffff',
     fontSize: 26,
     fontWeight: '800',
     letterSpacing: -0.5,
   },
   date: {
-    color: '#9ca3af',
     fontSize: 14,
     fontWeight: '500',
     marginTop: 4,
@@ -183,15 +182,12 @@ const styles = StyleSheet.create({
     marginVertical: 10,
   },
   card: {
-    backgroundColor: '#1e2126',
     borderRadius: 16,
     padding: 18,
     marginVertical: 10,
     borderWidth: 1,
-    borderColor: '#2a2d35',
   },
   bottomSpacer: {
     height: 30,
   },
 });
-

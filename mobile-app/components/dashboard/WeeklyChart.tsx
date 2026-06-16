@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import Svg, { Rect, Line } from 'react-native-svg';
+import { useThemeColors } from '../../types/theme';
 
 interface WeeklyChartProps {
   data: number[];
@@ -17,10 +18,11 @@ const DEFAULT_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 export default function WeeklyChart({ data, goal, labels = DEFAULT_LABELS }: WeeklyChartProps) {
   const maxValue = Math.max(...data, goal) * 1.15;
   const chartWidth = data.length * (BAR_WIDTH + 16);
+  const theme = useThemeColors();
 
   return (
     <View style={styles.container}>
-      <Text style={styles.sectionTitle}>Weekly Overview</Text>
+      <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>Weekly Overview</Text>
 
       <View style={styles.chartContainer}>
         <Svg width={chartWidth} height={CHART_HEIGHT + 30} style={styles.svg}>
@@ -53,7 +55,7 @@ export default function WeeklyChart({ data, goal, labels = DEFAULT_LABELS }: Wee
                   width={BAR_WIDTH}
                   height={CHART_HEIGHT - 4}
                   rx={BAR_RADIUS}
-                  fill="#2a2d35"
+                  fill={theme.border}
                   opacity={0.5}
                 />
                 {/* Bar fill */}
@@ -80,8 +82,8 @@ export default function WeeklyChart({ data, goal, labels = DEFAULT_LABELS }: Wee
               key={label}
               style={[
                 styles.dayLabel,
-                { width: BAR_WIDTH + 16 },
-                data[i] === 0 && styles.dayLabelDim,
+                { width: BAR_WIDTH + 16, color: theme.textMuted },
+                data[i] === 0 && { color: theme.textDimmer },
               ]}
             >
               {label}
@@ -94,15 +96,15 @@ export default function WeeklyChart({ data, goal, labels = DEFAULT_LABELS }: Wee
       <View style={styles.legend}>
         <View style={styles.legendItem}>
           <View style={[styles.legendDot, { backgroundColor: '#8b5cf6' }]} />
-          <Text style={styles.legendText}>Under goal</Text>
+          <Text style={[styles.legendText, { color: theme.textDim }]}>Under goal</Text>
         </View>
         <View style={styles.legendItem}>
           <View style={[styles.legendDot, { backgroundColor: '#ef4444' }]} />
-          <Text style={styles.legendText}>Over goal</Text>
+          <Text style={[styles.legendText, { color: theme.textDim }]}>Over goal</Text>
         </View>
         <View style={styles.legendItem}>
           <View style={styles.legendLine} />
-          <Text style={styles.legendText}>Goal ({goal})</Text>
+          <Text style={[styles.legendText, { color: theme.textDim }]}>Goal ({goal})</Text>
         </View>
       </View>
     </View>
@@ -114,7 +116,6 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   sectionTitle: {
-    color: '#ffffff',
     fontSize: 17,
     fontWeight: '700',
     marginBottom: 16,
@@ -130,13 +131,9 @@ const styles = StyleSheet.create({
     marginTop: 6,
   },
   dayLabel: {
-    color: '#9ca3af',
     fontSize: 11,
     fontWeight: '600',
     textAlign: 'center',
-  },
-  dayLabelDim: {
-    color: '#4b5563',
   },
   legend: {
     flexDirection: 'row',
@@ -162,7 +159,6 @@ const styles = StyleSheet.create({
     borderStyle: 'dashed',
   },
   legendText: {
-    color: '#6b7280',
     fontSize: 11,
     fontWeight: '500',
   },

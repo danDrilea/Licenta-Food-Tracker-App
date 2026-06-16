@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { useThemeColors } from '../../types/theme';
 
 interface DailyMacroSummaryProps {
   calories: { consumed: number; goal: number };
@@ -18,16 +19,17 @@ interface MiniBarProps {
 function MiniBar({ label, consumed, goal, color }: MiniBarProps) {
   const remaining = Math.max(0, goal - consumed);
   const pct = Math.min(consumed / goal, 1);
+  const theme = useThemeColors();
 
   return (
     <View style={miniStyles.container}>
-      <View style={[miniStyles.track]}>
+      <View style={[miniStyles.track, { backgroundColor: theme.border }]}>
         <View style={[miniStyles.fill, { width: `${pct * 100}%`, backgroundColor: color }]} />
       </View>
-      <Text style={miniStyles.label}>{label}</Text>
+      <Text style={[miniStyles.label, { color: theme.textMuted }]}>{label}</Text>
       <Text style={miniStyles.value}>
-        <Text style={{ color: '#fff', fontWeight: '700' }}>{remaining}</Text>
-        <Text style={{ color: '#6b7280' }}>g left</Text>
+        <Text style={{ color: theme.textPrimary, fontWeight: '700' }}>{remaining}</Text>
+        <Text style={{ color: theme.textDim }}>g left</Text>
       </Text>
     </View>
   );
@@ -42,7 +44,6 @@ const miniStyles = StyleSheet.create({
   track: {
     width: '100%',
     height: 6,
-    backgroundColor: '#2a2d35',
     borderRadius: 3,
     overflow: 'hidden',
   },
@@ -51,7 +52,6 @@ const miniStyles = StyleSheet.create({
     borderRadius: 3,
   },
   label: {
-    color: '#9ca3af',
     fontSize: 10,
     fontWeight: '600',
     textTransform: 'uppercase',
@@ -64,28 +64,29 @@ const miniStyles = StyleSheet.create({
 
 export default function DailyMacroSummary({ calories, protein, carbs, fat }: DailyMacroSummaryProps) {
   const calRemaining = Math.max(0, calories.goal - calories.consumed);
+  const theme = useThemeColors();
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
       {/* Calorie summary */}
       <View style={styles.calorieRow}>
         <View style={styles.calorieBlock}>
-          <Text style={styles.calorieNumber}>{calories.consumed}</Text>
-          <Text style={styles.calorieLabel}>eaten</Text>
+          <Text style={[styles.calorieNumber, { color: theme.textPrimary }]}>{calories.consumed}</Text>
+          <Text style={[styles.calorieLabel, { color: theme.textDim }]}>eaten</Text>
         </View>
 
-        <View style={styles.calorieDivider} />
+        <View style={[styles.calorieDivider, { backgroundColor: theme.border }]} />
 
         <View style={styles.calorieBlock}>
           <Text style={[styles.calorieNumber, styles.calorieRemaining]}>{calRemaining}</Text>
-          <Text style={styles.calorieLabel}>remaining</Text>
+          <Text style={[styles.calorieLabel, { color: theme.textDim }]}>remaining</Text>
         </View>
 
-        <View style={styles.calorieDivider} />
+        <View style={[styles.calorieDivider, { backgroundColor: theme.border }]} />
 
         <View style={styles.calorieBlock}>
-          <Text style={styles.calorieNumber}>{calories.goal}</Text>
-          <Text style={styles.calorieLabel}>goal</Text>
+          <Text style={[styles.calorieNumber, { color: theme.textPrimary }]}>{calories.goal}</Text>
+          <Text style={[styles.calorieLabel, { color: theme.textDim }]}>goal</Text>
         </View>
       </View>
 
@@ -101,11 +102,9 @@ export default function DailyMacroSummary({ calories, protein, carbs, fat }: Dai
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#1e2126',
     borderRadius: 16,
     padding: 16,
     borderWidth: 1,
-    borderColor: '#2a2d35',
   },
   calorieRow: {
     flexDirection: 'row',
@@ -118,7 +117,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   calorieNumber: {
-    color: '#ffffff',
     fontSize: 20,
     fontWeight: '700',
   },
@@ -126,7 +124,6 @@ const styles = StyleSheet.create({
     color: '#4ade80',
   },
   calorieLabel: {
-    color: '#6b7280',
     fontSize: 11,
     fontWeight: '500',
     textTransform: 'uppercase',
@@ -136,7 +133,6 @@ const styles = StyleSheet.create({
   calorieDivider: {
     width: 1,
     height: 30,
-    backgroundColor: '#2a2d35',
   },
   macroRow: {
     flexDirection: 'row',

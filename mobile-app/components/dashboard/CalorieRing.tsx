@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
+import { useThemeColors } from '../../types/theme';
 
 interface CalorieRingProps {
   consumed: number;
@@ -27,6 +28,7 @@ export default function CalorieRing({ consumed, goal }: CalorieRingProps) {
   const percentage = Math.min(consumed / goal, 1);
   const strokeDashoffset = CIRCUMFERENCE * (1 - percentage);
   const colors = getRingColor(percentage);
+  const theme = useThemeColors();
 
   return (
     <View style={styles.container}>
@@ -44,7 +46,7 @@ export default function CalorieRing({ consumed, goal }: CalorieRingProps) {
             cx={RING_SIZE / 2}
             cy={RING_SIZE / 2}
             r={RADIUS}
-            stroke="#2a2d35"
+            stroke={theme.border}
             strokeWidth={STROKE_WIDTH}
             fill="none"
           />
@@ -67,21 +69,21 @@ export default function CalorieRing({ consumed, goal }: CalorieRingProps) {
 
         {/* Center text */}
         <View style={styles.centerText}>
-          <Text style={styles.remainingNumber}>{remaining}</Text>
-          <Text style={styles.remainingLabel}>remaining</Text>
+          <Text style={[styles.remainingNumber, { color: theme.textPrimary }]}>{remaining}</Text>
+          <Text style={[styles.remainingLabel, { color: theme.textMuted }]}>remaining</Text>
         </View>
       </View>
 
       {/* Bottom stats */}
       <View style={styles.statsRow}>
         <View style={styles.stat}>
-          <Text style={styles.statValue}>{consumed}</Text>
-          <Text style={styles.statLabel}>consumed</Text>
+          <Text style={[styles.statValue, { color: theme.textPrimary }]}>{consumed}</Text>
+          <Text style={[styles.statLabel, { color: theme.textDim }]}>consumed</Text>
         </View>
-        <View style={[styles.stat, styles.statDivider]} />
+        <View style={[styles.stat, styles.statDivider, { backgroundColor: theme.border }]} />
         <View style={styles.stat}>
-          <Text style={styles.statValue}>{goal}</Text>
-          <Text style={styles.statLabel}>goal</Text>
+          <Text style={[styles.statValue, { color: theme.textPrimary }]}>{goal}</Text>
+          <Text style={[styles.statLabel, { color: theme.textDim }]}>goal</Text>
         </View>
       </View>
     </View>
@@ -104,13 +106,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   remainingNumber: {
-    color: '#ffffff',
     fontSize: 38,
     fontWeight: '700',
     letterSpacing: -1,
   },
   remainingLabel: {
-    color: '#9ca3af',
     fontSize: 13,
     fontWeight: '500',
     marginTop: -2,
@@ -129,15 +129,12 @@ const styles = StyleSheet.create({
   statDivider: {
     width: 1,
     height: 28,
-    backgroundColor: '#2a2d35',
   },
   statValue: {
-    color: '#ffffff',
     fontSize: 18,
     fontWeight: '600',
   },
   statLabel: {
-    color: '#6b7280',
     fontSize: 11,
     fontWeight: '500',
     textTransform: 'uppercase',

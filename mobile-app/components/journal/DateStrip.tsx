@@ -1,6 +1,7 @@
 import React, { useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, Pressable, FlatList } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { useThemeColors } from '../../types/theme';
 
 interface DateStripProps {
   selectedDate: Date;
@@ -38,6 +39,7 @@ function isToday(date: Date): boolean {
 export default function DateStrip({ selectedDate, onDateChange }: DateStripProps) {
   const flatListRef = useRef<FlatList>(null);
   const days = getDaysAroundDate(selectedDate);
+  const theme = useThemeColors();
 
   // Sync scroll position when selectedDate changes
   useEffect(() => {
@@ -83,15 +85,15 @@ export default function DateStrip({ selectedDate, onDateChange }: DateStripProps
       {/* Header with arrows */}
       <View style={styles.header}>
         <Pressable onPress={goToPrevDay} style={styles.arrowBtn} hitSlop={12}>
-          <Ionicons name="chevron-back" size={20} color="#9ca3af" />
+          <Ionicons name="chevron-back" size={20} color={theme.textMuted} />
         </Pressable>
 
         <Pressable onPress={goToToday}>
-          <Text style={styles.headerTitle}>{formatHeader()}</Text>
+          <Text style={[styles.headerTitle, { color: theme.textPrimary }]}>{formatHeader()}</Text>
         </Pressable>
 
         <Pressable onPress={goToNextDay} style={styles.arrowBtn} hitSlop={12}>
-          <Ionicons name="chevron-forward" size={20} color="#9ca3af" />
+          <Ionicons name="chevron-forward" size={20} color={theme.textMuted} />
         </Pressable>
       </View>
 
@@ -123,6 +125,7 @@ export default function DateStrip({ selectedDate, onDateChange }: DateStripProps
             >
               <Text style={[
                 styles.dayName,
+                { color: theme.textDim },
                 selected && styles.dayNameSelected,
                 today && !selected && styles.dayNameToday,
               ]}>
@@ -130,6 +133,7 @@ export default function DateStrip({ selectedDate, onDateChange }: DateStripProps
               </Text>
               <Text style={[
                 styles.dayNumber,
+                { color: theme.textMuted },
                 selected && styles.dayNumberSelected,
                 today && !selected && styles.dayNumberToday,
               ]}>
@@ -159,7 +163,6 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   headerTitle: {
-    color: '#ffffff',
     fontSize: 17,
     fontWeight: '700',
   },
@@ -179,7 +182,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#8b5cf6',
   },
   dayName: {
-    color: '#6b7280',
     fontSize: 11,
     fontWeight: '600',
     textTransform: 'uppercase',
@@ -191,7 +193,6 @@ const styles = StyleSheet.create({
     color: '#c77ffb',
   },
   dayNumber: {
-    color: '#9ca3af',
     fontSize: 18,
     fontWeight: '700',
   },

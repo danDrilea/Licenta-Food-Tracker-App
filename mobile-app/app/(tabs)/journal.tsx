@@ -9,6 +9,7 @@ import AddFoodModal from '../../components/journal/AddFoodModal';
 import { useSettings } from '../../contexts/SettingsContext';
 import { useFoodLogs } from '../../hooks/useFoodLogs';
 import { useDailyLogs } from '../../hooks/useDailyLogs';
+import { useThemeColors } from '../../types/theme';
 
 export default function JournalScreen() {
   const params = useLocalSearchParams();
@@ -18,6 +19,7 @@ export default function JournalScreen() {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [addingFoodToMeal, setAddingFoodToMeal] = useState<{id: string, name: string} | null>(null);
   const { settings } = useSettings();
+  const colors = useThemeColors();
 
   // Handle navigation from Dashboard
   useEffect(() => {
@@ -91,7 +93,7 @@ export default function JournalScreen() {
     }));
 
   return (
-    <View style={styles.screen}>
+    <View style={[styles.screen, { backgroundColor: colors.background }]}>
       {/* Date strip - fixed at top */}
       <DateStrip selectedDate={selectedDate} onDateChange={setSelectedDate} />
 
@@ -131,7 +133,7 @@ export default function JournalScreen() {
         </View>
 
         {/* Water intake */}
-        <View style={styles.card}>
+        <View style={[styles.card, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
           <WaterTracker
             glasses={waterGlasses}
             onGlassesChange={setWaterGlasses}
@@ -178,7 +180,6 @@ export default function JournalScreen() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: '#25292e',
     paddingTop: 8,
   },
   scrollView: {
@@ -193,15 +194,12 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
   card: {
-    backgroundColor: '#1e2126',
     borderRadius: 16,
     padding: 18,
     marginTop: 16,
     borderWidth: 1,
-    borderColor: '#2a2d35',
   },
   bottomSpacer: {
     height: 30,
   },
 });
-

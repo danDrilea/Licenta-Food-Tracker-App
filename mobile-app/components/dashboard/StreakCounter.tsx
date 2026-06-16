@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, Pressable, Alert } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { useThemeColors } from '../../types/theme';
 
 interface StreakCounterProps {
   days: number;
@@ -19,6 +20,7 @@ function getMotivation(days: number, isFrozen: boolean): string {
 
 export default function StreakCounter({ days, isFrozen = false }: StreakCounterProps) {
   const motivation = getMotivation(days, isFrozen);
+  const theme = useThemeColors();
 
   const showInfo = () => {
     Alert.alert(
@@ -33,7 +35,7 @@ export default function StreakCounter({ days, isFrozen = false }: StreakCounterP
   const wrapperBg = isFrozen ? 'rgba(107, 114, 128, 0.1)' : 'rgba(249, 115, 22, 0.12)';
 
   return (
-    <View style={[styles.container, isFrozen && styles.containerFrozen]}>
+    <View style={[styles.container, { backgroundColor: theme.cardBg }, isFrozen ? styles.containerFrozen : { borderColor: 'rgba(249, 115, 22, 0.2)' }]}>
       <View style={[styles.flameGlow, { backgroundColor: glowColor }]} />
       <View style={styles.content}>
         <View style={[styles.flameWrapper, { backgroundColor: wrapperBg }]}>
@@ -43,9 +45,9 @@ export default function StreakCounter({ days, isFrozen = false }: StreakCounterP
           <View style={styles.daysRow}>
             <View style={styles.daysMainRow}>
               <Text style={[styles.daysNumber, { color: flameColor }]}>{days}</Text>
-              <Text style={styles.daysLabel}> day{days !== 1 ? 's' : ''} streak</Text>
+              <Text style={[styles.daysLabel, { color: theme.textSecondary }]}> day{days !== 1 ? 's' : ''} streak</Text>
               <Pressable onPress={showInfo} style={styles.infoButton}>
-                <Ionicons name="information-circle-outline" size={16} color="#9ca3af" />
+                <Ionicons name="information-circle-outline" size={16} color={theme.textMuted} />
               </Pressable>
             </View>
             {isFrozen && (
@@ -55,7 +57,7 @@ export default function StreakCounter({ days, isFrozen = false }: StreakCounterP
               </View>
             )}
           </View>
-          <Text style={styles.motivation}>{motivation}</Text>
+          <Text style={[styles.motivation, { color: theme.textMuted }]}>{motivation}</Text>
         </View>
       </View>
     </View>
@@ -64,11 +66,9 @@ export default function StreakCounter({ days, isFrozen = false }: StreakCounterP
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#1e2126',
     borderRadius: 16,
     padding: 18,
     borderWidth: 1,
-    borderColor: 'rgba(249, 115, 22, 0.2)',
     overflow: 'hidden',
   },
   containerFrozen: {
@@ -109,7 +109,6 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   daysLabel: {
-    color: '#e5e7eb',
     fontSize: 16,
     fontWeight: '600',
   },
@@ -118,7 +117,6 @@ const styles = StyleSheet.create({
     padding: 2,
   },
   motivation: {
-    color: '#9ca3af',
     fontSize: 13,
     fontWeight: '500',
     marginTop: 2,

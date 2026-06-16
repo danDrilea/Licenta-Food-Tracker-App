@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, Pressable, Switch } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { useThemeColors } from '../../types/theme';
 
 // ─── Reusable Row Components ────────────────────────────────────────
 
@@ -10,10 +11,11 @@ interface SettingsGroupProps {
 }
 
 export function SettingsGroup({ title, children }: SettingsGroupProps) {
+  const theme = useThemeColors();
   return (
     <View style={styles.group}>
-      <Text style={styles.groupTitle}>{title}</Text>
-      <View style={styles.groupCard}>{children}</View>
+      <Text style={[styles.groupTitle, { color: theme.textMuted }]}>{title}</Text>
+      <View style={[styles.groupCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>{children}</View>
     </View>
   );
 }
@@ -29,12 +31,13 @@ interface SettingsRowProps {
 }
 
 export function SettingsRow({ icon, iconColor = '#8b5cf6', label, value, onPress, isLast, right }: SettingsRowProps) {
+  const theme = useThemeColors();
   return (
     <Pressable
       style={({ pressed }) => [
         styles.row,
-        !isLast && styles.rowBorder,
-        pressed && onPress && styles.rowPressed,
+        !isLast && [styles.rowBorder, { borderBottomColor: theme.border }],
+        pressed && onPress && { backgroundColor: theme.rowPressed },
       ]}
       onPress={onPress}
       disabled={!onPress && !right}
@@ -43,14 +46,14 @@ export function SettingsRow({ icon, iconColor = '#8b5cf6', label, value, onPress
         <View style={[styles.rowIcon, { backgroundColor: `${iconColor}20` }]}>
           <Ionicons name={icon} size={18} color={iconColor} />
         </View>
-        <Text style={styles.rowLabel}>{label}</Text>
+        <Text style={[styles.rowLabel, { color: theme.textSecondary }]}>{label}</Text>
       </View>
 
       <View style={styles.rowRight}>
         {right || (
           <>
-            {value && <Text style={styles.rowValue}>{value}</Text>}
-            {onPress && <Ionicons name="chevron-forward" size={16} color="#4b5563" />}
+            {value && <Text style={[styles.rowValue, { color: theme.textDim }]}>{value}</Text>}
+            {onPress && <Ionicons name="chevron-forward" size={16} color={theme.textDimmer} />}
           </>
         )}
       </View>
@@ -68,6 +71,7 @@ interface SettingsToggleRowProps {
 }
 
 export function SettingsToggleRow({ icon, iconColor = '#8b5cf6', label, value, onToggle, isLast }: SettingsToggleRowProps) {
+  const theme = useThemeColors();
   return (
     <SettingsRow
       icon={icon}
@@ -78,8 +82,8 @@ export function SettingsToggleRow({ icon, iconColor = '#8b5cf6', label, value, o
         <Switch
           value={value}
           onValueChange={onToggle}
-          trackColor={{ false: '#2a2d35', true: '#8b5cf680' }}
-          thumbColor={value ? '#8b5cf6' : '#6b7280'}
+          trackColor={{ false: theme.switchTrackOff, true: '#8b5cf680' }}
+          thumbColor={value ? '#8b5cf6' : theme.textDim}
         />
       }
     />
@@ -91,7 +95,6 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   groupTitle: {
-    color: '#9ca3af',
     fontSize: 12,
     fontWeight: '700',
     textTransform: 'uppercase',
@@ -100,10 +103,8 @@ const styles = StyleSheet.create({
     marginLeft: 4,
   },
   groupCard: {
-    backgroundColor: '#1e2126',
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#2a2d35',
     overflow: 'hidden',
   },
   row: {
@@ -115,10 +116,6 @@ const styles = StyleSheet.create({
   },
   rowBorder: {
     borderBottomWidth: 1,
-    borderBottomColor: '#2a2d35',
-  },
-  rowPressed: {
-    backgroundColor: '#2a2d35',
   },
   rowLeft: {
     flexDirection: 'row',
@@ -134,7 +131,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   rowLabel: {
-    color: '#e5e7eb',
     fontSize: 15,
     fontWeight: '500',
   },
@@ -144,7 +140,6 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   rowValue: {
-    color: '#6b7280',
     fontSize: 14,
     fontWeight: '500',
   },

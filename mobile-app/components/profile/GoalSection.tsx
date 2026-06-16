@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { UserGoal, GOAL_LABELS } from '../../types/profile';
+import { useThemeColors } from '../../types/theme';
 
 interface GoalSectionProps {
   goal: UserGoal;
@@ -28,6 +29,7 @@ export default function GoalSection({ goal, currentWeight, onEditPress }: GoalSe
   const icon = GOAL_ICONS[goal.type];
   const isGaining = goal.type === 'weight_gain';
   const reachedGoal = isGaining ? currentWeight >= (goal.targetWeight || 0) : currentWeight <= (goal.targetWeight || 999);
+  const theme = useThemeColors();
   
   const diff = goal.targetWeight
     ? Math.abs(goal.targetWeight - currentWeight).toFixed(1)
@@ -38,13 +40,13 @@ export default function GoalSection({ goal, currentWeight, onEditPress }: GoalSe
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.sectionTitle}>Goal</Text>
+        <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>Goal</Text>
         <Pressable onPress={onEditPress} hitSlop={10}>
           <Ionicons name="create-outline" size={20} color="#8b5cf6" />
         </Pressable>
       </View>
 
-      <View style={[styles.card, { borderColor: `${color}30` }]}>
+      <View style={[styles.card, { backgroundColor: theme.cardBg, borderColor: `${color}30` }]}>
         <View style={styles.row}>
           <View style={[styles.iconCircle, { backgroundColor: `${color}20` }]}>
             <Ionicons name={icon} size={22} color={color} />
@@ -56,19 +58,19 @@ export default function GoalSection({ goal, currentWeight, onEditPress }: GoalSe
             </Text>
 
             {goal.targetWeight != null && (
-              <Text style={styles.targetText}>
+              <Text style={[styles.targetText, { color: theme.textMuted }]}>
                 Target: {goal.targetWeight} kg {diffText}
               </Text>
             )}
 
             {goal.weeklyRate != null && (
-              <Text style={styles.rateText}>
+              <Text style={[styles.rateText, { color: theme.textDim }]}>
                 {goal.weeklyRate} kg/week
               </Text>
             )}
 
             {goal.type === 'custom' && goal.customCalorieTarget != null && (
-              <Text style={styles.targetText}>
+              <Text style={[styles.targetText, { color: theme.textMuted }]}>
                 {goal.customCalorieTarget} kcal/day target
               </Text>
             )}
@@ -90,12 +92,10 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   sectionTitle: {
-    color: '#ffffff',
     fontSize: 17,
     fontWeight: '700',
   },
   card: {
-    backgroundColor: '#1e2126',
     borderRadius: 16,
     padding: 16,
     borderWidth: 1,
@@ -121,12 +121,10 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   targetText: {
-    color: '#9ca3af',
     fontSize: 13,
     fontWeight: '500',
   },
   rateText: {
-    color: '#6b7280',
     fontSize: 12,
     fontWeight: '500',
     marginTop: 2,

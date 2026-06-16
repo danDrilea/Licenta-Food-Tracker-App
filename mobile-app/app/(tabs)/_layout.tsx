@@ -2,6 +2,7 @@ import { Tabs, useRouter } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useState } from 'react';
 import { View, Text, StyleSheet, Pressable, Modal, Image } from 'react-native';
+import { useThemeColors } from '../../types/theme';
 
 const MENU_OPTIONS = [
   { icon: 'camera' as const, label: 'Scan Photo' },
@@ -15,26 +16,27 @@ const triangleImg = require('../../assets/images/cool-triangle.webp');
 export default function TabLayout() {
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
+  const colors = useThemeColors();
 
   return (
     <>
       <Tabs
         screenOptions={{
           tabBarActiveTintColor: '#c77ffb',
-          tabBarInactiveTintColor: '#888',
+          tabBarInactiveTintColor: colors.textDim,
           headerStyle: {
-            backgroundColor: '#25292e',
+            backgroundColor: colors.headerBg,
           },
           headerShadowVisible: false,
-          headerTintColor: '#ffffff',
+          headerTintColor: colors.textPrimary,
           tabBarStyle: {
-            backgroundColor: '#131517',
-            borderTopColor: '#6d28d9',
+            backgroundColor: colors.tabBarBg,
+            borderTopColor: colors.tabBarBorder,
             borderTopWidth: 0.8,
             height: 85,
             paddingBottom: 25,
             paddingTop: 5,
-            shadowColor: '#8800ff',
+            shadowColor: colors.tabBarShadow,
             shadowOffset: { width: 0, height: -3 },
             shadowOpacity: 0.35,
             shadowRadius: 6,
@@ -111,14 +113,14 @@ export default function TabLayout() {
         animationType="none"
         onRequestClose={() => setMenuOpen(false)}
       >
-        <Pressable style={styles.overlay} onPress={() => setMenuOpen(false)}>
-          <Pressable style={styles.menuContainer} onPress={(e) => e.stopPropagation()}>
+        <Pressable style={[styles.overlay, { backgroundColor: colors.overlay }]} onPress={() => setMenuOpen(false)}>
+          <Pressable style={[styles.menuContainer, { backgroundColor: colors.cardBg }]} onPress={(e) => e.stopPropagation()}>
             {MENU_OPTIONS.map((option) => (
               <Pressable
                 key={option.label}
                 style={({ pressed }) => [
                   styles.menuItem,
-                  pressed && styles.menuItemPressed,
+                  pressed && { backgroundColor: colors.rowPressed },
                 ]}
                 onPress={() => {
                   setMenuOpen(false);
@@ -132,7 +134,7 @@ export default function TabLayout() {
                 <View style={styles.menuIconCircle}>
                   <Ionicons name={option.icon} color="#fff" size={22} />
                 </View>
-                <Text style={styles.menuLabel}>{option.label}</Text>
+                <Text style={[styles.menuLabel, { color: colors.textPrimary }]}>{option.label}</Text>
               </Pressable>
             ))}
           </Pressable>
@@ -172,14 +174,12 @@ const styles = StyleSheet.create({
 
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
     justifyContent: 'flex-end',
     alignItems: 'center',
     paddingBottom: 110,
   },
 
   menuContainer: {
-    backgroundColor: '#1e2126',
     borderRadius: 16,
     paddingVertical: 8,
     paddingHorizontal: 8,
@@ -193,9 +193,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     borderRadius: 12,
   },
-  menuItemPressed: {
-    backgroundColor: '#2a2d32',
-  },
   menuIconCircle: {
     width: 40,
     height: 40,
@@ -206,7 +203,6 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   menuLabel: {
-    color: '#fff',
     fontSize: 15,
     fontWeight: '600',
   },

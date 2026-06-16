@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, Pressable } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { UNIT_LABELS } from '../../types/settings';
 import type { WeightUnit, HeightUnit, EnergyUnit } from '../../types/settings';
+import { useThemeColors } from '../../types/theme';
 
 interface UnitOptionProps<T extends string> {
   label: string;
@@ -12,12 +13,13 @@ interface UnitOptionProps<T extends string> {
 }
 
 function UnitOption<T extends string>({ label, value, selected, onSelect }: UnitOptionProps<T>) {
+  const theme = useThemeColors();
   return (
     <Pressable
-      style={[styles.option, selected && styles.optionSelected]}
+      style={[styles.option, { backgroundColor: theme.border }, selected && styles.optionSelected]}
       onPress={() => onSelect(value)}
     >
-      <Text style={[styles.optionText, selected && styles.optionTextSelected]}>{label}</Text>
+      <Text style={[styles.optionText, { color: theme.textMuted }, selected && { color: theme.textSecondary, fontWeight: '600' }]}>{label}</Text>
       {selected && <Ionicons name="checkmark-circle" size={18} color="#8b5cf6" />}
     </Pressable>
   );
@@ -40,35 +42,36 @@ export default function UnitSelector({
   onHeightChange,
   onEnergyChange,
 }: UnitSelectorProps) {
+  const theme = useThemeColors();
   return (
     <View style={styles.container}>
-      <Text style={styles.groupTitle}>Units</Text>
-      <View style={styles.card}>
+      <Text style={[styles.groupTitle, { color: theme.textMuted }]}>Units</Text>
+      <View style={[styles.card, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
         {/* Weight */}
         <View style={styles.section}>
-          <Text style={styles.sectionLabel}>Weight</Text>
+          <Text style={[styles.sectionLabel, { color: theme.textMuted }]}>Weight</Text>
           <View style={styles.optionsRow}>
             <UnitOption label={UNIT_LABELS.kg} value="kg" selected={weightUnit === 'kg'} onSelect={onWeightChange} />
             <UnitOption label={UNIT_LABELS.lbs} value="lbs" selected={weightUnit === 'lbs'} onSelect={onWeightChange} />
           </View>
         </View>
 
-        <View style={styles.divider} />
+        <View style={[styles.divider, { backgroundColor: theme.border }]} />
 
         {/* Height */}
         <View style={styles.section}>
-          <Text style={styles.sectionLabel}>Height</Text>
+          <Text style={[styles.sectionLabel, { color: theme.textMuted }]}>Height</Text>
           <View style={styles.optionsRow}>
             <UnitOption label={UNIT_LABELS.cm} value="cm" selected={heightUnit === 'cm'} onSelect={onHeightChange} />
             <UnitOption label={UNIT_LABELS.ft} value="ft" selected={heightUnit === 'ft'} onSelect={onHeightChange} />
           </View>
         </View>
 
-        <View style={styles.divider} />
+        <View style={[styles.divider, { backgroundColor: theme.border }]} />
 
         {/* Energy */}
         <View style={styles.section}>
-          <Text style={styles.sectionLabel}>Energy</Text>
+          <Text style={[styles.sectionLabel, { color: theme.textMuted }]}>Energy</Text>
           <View style={styles.optionsRow}>
             <UnitOption label={UNIT_LABELS.kcal} value="kcal" selected={energyUnit === 'kcal'} onSelect={onEnergyChange} />
             <UnitOption label={UNIT_LABELS.kj} value="kj" selected={energyUnit === 'kj'} onSelect={onEnergyChange} />
@@ -84,7 +87,6 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   groupTitle: {
-    color: '#9ca3af',
     fontSize: 12,
     fontWeight: '700',
     textTransform: 'uppercase',
@@ -93,17 +95,14 @@ const styles = StyleSheet.create({
     marginLeft: 4,
   },
   card: {
-    backgroundColor: '#1e2126',
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#2a2d35',
     padding: 14,
   },
   section: {
     gap: 8,
   },
   sectionLabel: {
-    color: '#9ca3af',
     fontSize: 13,
     fontWeight: '600',
   },
@@ -119,7 +118,6 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 12,
     borderRadius: 10,
-    backgroundColor: '#2a2d35',
   },
   optionSelected: {
     backgroundColor: 'rgba(139, 92, 246, 0.15)',
@@ -127,17 +125,11 @@ const styles = StyleSheet.create({
     borderColor: '#8b5cf650',
   },
   optionText: {
-    color: '#9ca3af',
     fontSize: 13,
     fontWeight: '500',
   },
-  optionTextSelected: {
-    color: '#e5e7eb',
-    fontWeight: '600',
-  },
   divider: {
     height: 1,
-    backgroundColor: '#2a2d35',
     marginVertical: 12,
   },
 });

@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { useThemeColors } from '../../types/theme';
 
 interface WaterTrackerProps {
   glasses: number;
@@ -9,13 +10,13 @@ interface WaterTrackerProps {
 }
 
 const WATER_COLOR = '#38bdf8';
-const WATER_COLOR_DIM = '#1e3a4d';
 
 const MAX_GLASSES_DISPLAY = 32;
 
 export default function WaterTracker({ glasses, goal = 8, onGlassesChange }: WaterTrackerProps) {
   // Cap the goal for display purposes
   const displayGoal = Math.min(goal, MAX_GLASSES_DISPLAY);
+  const theme = useThemeColors();
   
   const handleTap = (index: number) => {
     // If tapping the last filled glass, unfill it (toggle behavior)
@@ -29,11 +30,11 @@ export default function WaterTracker({ glasses, goal = 8, onGlassesChange }: Wat
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.sectionTitle}>Water Intake</Text>
+        <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>Water Intake</Text>
         <Text style={styles.counter}>
           <Text style={styles.counterCurrent}>{glasses}</Text>
-          <Text style={styles.counterSeparator}> / {goal} </Text>
-          <Text style={styles.counterUnit}>glasses</Text>
+          <Text style={[styles.counterSeparator, { color: theme.textDim }]}> / {goal} </Text>
+          <Text style={[styles.counterUnit, { color: theme.textDim }]}>glasses</Text>
         </Text>
       </View>
 
@@ -52,7 +53,7 @@ export default function WaterTracker({ glasses, goal = 8, onGlassesChange }: Wat
               <Ionicons
                 name={isFilled ? 'water' : 'water-outline'}
                 size={26}
-                color={isFilled ? WATER_COLOR : WATER_COLOR_DIM}
+                color={isFilled ? WATER_COLOR : theme.waterDim}
               />
             </Pressable>
           );
@@ -74,7 +75,6 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   sectionTitle: {
-    color: '#ffffff',
     fontSize: 17,
     fontWeight: '700',
   },
@@ -87,11 +87,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   counterSeparator: {
-    color: '#6b7280',
     fontWeight: '500',
   },
   counterUnit: {
-    color: '#6b7280',
     fontWeight: '500',
   },
   glassGrid: {

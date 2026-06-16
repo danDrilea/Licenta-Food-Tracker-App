@@ -11,6 +11,7 @@ import WeightProgress from '../../components/profile/WeightProgress';
 import HealthIndexes from '../../components/profile/HealthIndexes';
 import WeightHistoryChart from '../../components/profile/WeightHistoryChart';
 import { useProfile, useWeightHistory } from '../../hooks/useProfile';
+import { useThemeColors } from '../../types/theme';
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -18,6 +19,7 @@ export default function ProfileScreen() {
   const { profile } = useProfile();
   const { history } = useWeightHistory();
   const [avatarUri, setAvatarUri] = useState<string | null>(null);
+  const colors = useThemeColors();
 
   // Load avatar from DB
   const loadAvatar = useCallback(async () => {
@@ -93,8 +95,8 @@ export default function ProfileScreen() {
 
   if (!profile) {
     return (
-      <View style={[styles.scrollView, { justifyContent: 'center', alignItems: 'center' }]}>
-        <Text style={{ color: '#ffffff' }}>Loading profile...</Text>
+      <View style={[styles.scrollView, { backgroundColor: colors.background, justifyContent: 'center', alignItems: 'center' }]}>
+        <Text style={{ color: colors.textPrimary }}>Loading profile...</Text>
       </View>
     );
   }
@@ -107,7 +109,7 @@ export default function ProfileScreen() {
 
   return (
     <ScrollView
-      style={styles.scrollView}
+      style={[styles.scrollView, { backgroundColor: colors.background }]}
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
     >
@@ -166,7 +168,6 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
-    backgroundColor: '#25292e',
   },
   content: {
     paddingHorizontal: 20,

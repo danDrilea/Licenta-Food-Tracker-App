@@ -3,12 +3,14 @@ import { StyleSheet, View, Text, TextInput, TouchableOpacity, KeyboardAvoidingVi
 import { useRouter, Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useWeightHistory } from '../hooks/useProfile';
+import { useThemeColors } from '../types/theme';
 
 export default function LogWeightScreen() {
   const router = useRouter();
   const { addWeightEntry } = useWeightHistory();
   const [weight, setWeight] = useState('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const theme = useThemeColors();
 
   const handleSave = async () => {
     const weightNum = parseFloat(weight);
@@ -21,18 +23,18 @@ export default function LogWeightScreen() {
   return (
     <KeyboardAvoidingView 
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={styles.container}
+      style={[styles.container, { backgroundColor: theme.background }]}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
     >
       <Stack.Screen options={{ 
         title: 'Log Weight',
         headerLeft: () => (
           <TouchableOpacity onPress={() => router.back()}>
-            <Ionicons name="close" size={24} color="#ffffff" />
+            <Ionicons name="close" size={24} color={theme.textPrimary} />
           </TouchableOpacity>
         ),
-        headerStyle: { backgroundColor: '#1e2126' },
-        headerTintColor: '#ffffff',
+        headerStyle: { backgroundColor: theme.cardBg },
+        headerTintColor: theme.textPrimary,
       }} />
 
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
@@ -46,27 +48,27 @@ export default function LogWeightScreen() {
           </View>
         </View>
 
-        <Text style={styles.title}>What's your weight today?</Text>
-        <Text style={styles.subtitle}>Keep track of your progress regularly.</Text>
+        <Text style={[styles.title, { color: theme.textPrimary }]}>What's your weight today?</Text>
+        <Text style={[styles.subtitle, { color: theme.textMuted }]}>Keep track of your progress regularly.</Text>
 
         <View style={styles.inputGroup}>
           <View style={styles.weightInputContainer}>
             <TextInput
-              style={styles.weightInput}
+              style={[styles.weightInput, { color: theme.textPrimary }]}
               value={weight}
               onChangeText={setWeight}
               keyboardType="numeric"
               placeholder="0.0"
-              placeholderTextColor="#4b5563"
+              placeholderTextColor={theme.textDimmer}
               autoFocus
             />
             <Text style={styles.unit}>kg</Text>
           </View>
         </View>
 
-        <View style={styles.dateSelector}>
-          <Ionicons name="calendar-outline" size={18} color="#9ca3af" />
-          <Text style={styles.dateText}>{date === new Date().toISOString().split('T')[0] ? 'Today' : date}</Text>
+        <View style={[styles.dateSelector, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
+          <Ionicons name="calendar-outline" size={18} color={theme.textMuted} />
+          <Text style={[styles.dateText, { color: theme.textSecondary }]}>{date === new Date().toISOString().split('T')[0] ? 'Today' : date}</Text>
         </View>
 
         <TouchableOpacity 
@@ -85,7 +87,6 @@ export default function LogWeightScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#25292e',
   },
   scrollContent: {
     flexGrow: 1,
@@ -106,14 +107,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   title: {
-    color: '#ffffff',
     fontSize: 24,
     fontWeight: '800',
     textAlign: 'center',
     marginBottom: 8,
   },
   subtitle: {
-    color: '#9ca3af',
     fontSize: 16,
     textAlign: 'center',
     marginBottom: 40,
@@ -129,7 +128,6 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   weightInput: {
-    color: '#ffffff',
     fontSize: 64,
     fontWeight: '800',
     textAlign: 'center',
@@ -144,16 +142,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: '#1e2126',
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: '#2a2d35',
     marginBottom: 40,
   },
   dateText: {
-    color: '#e5e7eb',
     fontSize: 14,
     fontWeight: '600',
   },

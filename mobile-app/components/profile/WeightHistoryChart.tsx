@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
 import Svg, { Rect, Line, Circle as SvgCircle, Text as SvgText } from 'react-native-svg';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { WeightEntry } from '../../types/profile';
+import { useThemeColors } from '../../types/theme';
 
 interface WeightHistoryChartProps {
   entries: WeightEntry[];
@@ -15,6 +16,7 @@ const COLUMN_WIDTH = 50; // Increased for better breathing room
 
 export default function WeightHistoryChart({ entries, onLogWeight }: WeightHistoryChartProps) {
   const scrollViewRef = useRef<ScrollView>(null);
+  const theme = useThemeColors();
 
   // Take last 30 entries for a better trend view
   const displayEntries = useMemo(() => {
@@ -41,7 +43,7 @@ export default function WeightHistoryChart({ entries, onLogWeight }: WeightHisto
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.sectionTitle}>Weight History</Text>
+        <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>Weight History</Text>
         <Pressable
           style={({ pressed }) => [styles.logBtn, pressed && styles.logBtnPressed]}
           onPress={onLogWeight}
@@ -51,13 +53,13 @@ export default function WeightHistoryChart({ entries, onLogWeight }: WeightHisto
         </Pressable>
       </View>
 
-      <View style={styles.card}>
+      <View style={[styles.card, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
         {hasData ? (
           <>
             {/* Latest weight highlight */}
             <View style={styles.latestRow}>
-              <Text style={styles.latestWeight}>{weights[weights.length - 1]} kg</Text>
-              <Text style={styles.latestDate}>
+              <Text style={[styles.latestWeight, { color: theme.textPrimary }]}>{weights[weights.length - 1]} kg</Text>
+              <Text style={[styles.latestDate, { color: theme.textDim }]}>
                 {formatDate(displayEntries[displayEntries.length - 1].date)}
               </Text>
             </View>
@@ -106,7 +108,7 @@ export default function WeightHistoryChart({ entries, onLogWeight }: WeightHisto
                         x={x}
                         y={y - 10}
                         fontSize="10"
-                        fill={isLast ? '#ffffff' : '#9ca3af'}
+                        fill={isLast ? theme.textPrimary : theme.textMuted}
                         fontWeight={isLast ? '800' : '500'}
                         textAnchor="middle"
                       >
@@ -118,7 +120,7 @@ export default function WeightHistoryChart({ entries, onLogWeight }: WeightHisto
                         cy={y}
                         r={isLast ? DOT_RADIUS + 2 : DOT_RADIUS}
                         fill={isLast ? '#c77ffb' : '#8b5cf6'}
-                        stroke={isLast ? '#1e2126' : 'none'}
+                        stroke={isLast ? theme.cardBg : 'none'}
                         strokeWidth={isLast ? 2 : 0}
                       />
                     </React.Fragment>
@@ -129,7 +131,7 @@ export default function WeightHistoryChart({ entries, onLogWeight }: WeightHisto
               {/* Date labels */}
               <View style={[styles.dateLabels, { width: chartWidth }]}>
                 {displayEntries.map((entry, i) => (
-                  <Text key={i} style={[styles.dateLabel, { width: COLUMN_WIDTH }]}>
+                  <Text key={i} style={[styles.dateLabel, { width: COLUMN_WIDTH, color: theme.textDim }]}>
                     {shortDate(entry.date)}
                   </Text>
                 ))}
@@ -139,8 +141,8 @@ export default function WeightHistoryChart({ entries, onLogWeight }: WeightHisto
         </>
       ) : (
         <View style={styles.emptyState}>
-          <Ionicons name="analytics-outline" size={32} color="#4b5563" />
-          <Text style={styles.emptyText}>Log your weight to see trends</Text>
+          <Ionicons name="analytics-outline" size={32} color={theme.textDimmer} />
+          <Text style={[styles.emptyText, { color: theme.textDimmer }]}>Log your weight to see trends</Text>
         </View>
       )}
     </View>
@@ -169,7 +171,6 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   sectionTitle: {
-    color: '#ffffff',
     fontSize: 17,
     fontWeight: '700',
   },
@@ -191,11 +192,9 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   card: {
-    backgroundColor: '#1e2126',
     borderRadius: 16,
     padding: 18,
     borderWidth: 1,
-    borderColor: '#2a2d35',
   },
   latestRow: {
     flexDirection: 'row',
@@ -204,12 +203,10 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   latestWeight: {
-    color: '#ffffff',
     fontSize: 22,
     fontWeight: '700',
   },
   latestDate: {
-    color: '#6b7280',
     fontSize: 12,
     fontWeight: '500',
   },
@@ -227,7 +224,6 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   dateLabel: {
-    color: '#6b7280',
     fontSize: 9,
     fontWeight: '500',
     textAlign: 'center',
@@ -238,7 +234,6 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   emptyText: {
-    color: '#4b5563',
     fontSize: 13,
     fontWeight: '500',
   },

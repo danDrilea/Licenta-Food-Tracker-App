@@ -4,6 +4,7 @@ import { useRouter, Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useProfile } from '../hooks/useProfile';
 import { GOAL_LABELS, UserGoal, GoalType } from '../types/profile';
+import { useThemeColors } from '../types/theme';
 
 const GOAL_OPTIONS: { type: GoalType; icon: keyof typeof Ionicons.glyphMap; color: string; description: string }[] = [
   { type: 'weight_loss', icon: 'trending-down', color: '#4ade80', description: 'Lose body fat safely' },
@@ -17,6 +18,7 @@ const RATES = [0.25, 0.5, 0.75, 1.0];
 export default function EditGoalScreen() {
   const router = useRouter();
   const { profile, updateGoal } = useProfile();
+  const theme = useThemeColors();
 
   const [type, setType] = useState<GoalType>('maintain');
   const [targetWeight, setTargetWeight] = useState('');
@@ -42,26 +44,27 @@ export default function EditGoalScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
       <Stack.Screen options={{
         title: 'Fitness Goal',
-        headerStyle: { backgroundColor: '#1e2126' },
-        headerTintColor: '#ffffff',
+        headerStyle: { backgroundColor: theme.cardBg },
+        headerTintColor: theme.textPrimary,
         headerLeft: () => (
           <TouchableOpacity onPress={() => router.back()}>
-            <Ionicons name="close" size={24} color="#ffffff" />
+            <Ionicons name="close" size={24} color={theme.textPrimary} />
           </TouchableOpacity>
         ),
       }} />
 
       <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
-        <Text style={styles.sectionLabel}>CHOOSE YOUR GOAL</Text>
+        <Text style={[styles.sectionLabel, { color: theme.textMuted }]}>CHOOSE YOUR GOAL</Text>
         <View style={styles.grid}>
           {GOAL_OPTIONS.map((opt) => (
             <Pressable 
               key={opt.type} 
               style={[
                 styles.goalCard, 
+                { backgroundColor: theme.cardBg, borderColor: theme.border },
                 type === opt.type && { borderColor: opt.color, backgroundColor: `${opt.color}10` }
               ]}
               onPress={() => setType(opt.type)}
@@ -69,10 +72,10 @@ export default function EditGoalScreen() {
               <View style={[styles.iconCircle, { backgroundColor: `${opt.color}20` }]}>
                 <Ionicons name={opt.icon} size={24} color={opt.color} />
               </View>
-              <Text style={[styles.goalLabel, type === opt.type && { color: opt.color }]}>
+              <Text style={[styles.goalLabel, { color: theme.textPrimary }, type === opt.type && { color: opt.color }]}>
                 {GOAL_LABELS[opt.type]}
               </Text>
-              <Text style={styles.goalDesc}>{opt.description}</Text>
+              <Text style={[styles.goalDesc, { color: theme.textDim }]}>{opt.description}</Text>
               {type === opt.type && (
                 <View style={[styles.checkCircle, { backgroundColor: opt.color }]}>
                   <Ionicons name="checkmark" size={12} color="#ffffff" />
@@ -84,15 +87,15 @@ export default function EditGoalScreen() {
 
         {type !== 'maintain' && (
           <View style={styles.section}>
-            <Text style={styles.sectionLabel}>TARGET WEIGHT (KG)</Text>
-            <View style={styles.inputCard}>
+            <Text style={[styles.sectionLabel, { color: theme.textMuted }]}>TARGET WEIGHT (KG)</Text>
+            <View style={[styles.inputCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
               <TextInput
-                style={styles.weightInput}
+                style={[styles.weightInput, { color: theme.textPrimary }]}
                 value={targetWeight}
                 onChangeText={setTargetWeight}
                 keyboardType="numeric"
                 placeholder="0.0"
-                placeholderTextColor="#4b5563"
+                placeholderTextColor={theme.textDimmer}
               />
             </View>
           </View>
@@ -100,21 +103,21 @@ export default function EditGoalScreen() {
 
         {(type === 'weight_loss' || type === 'weight_gain') && (
           <View style={styles.section}>
-            <Text style={styles.sectionLabel}>WEEKLY RATE (KG/WEEK)</Text>
-            <View style={styles.segmentedControl}>
+            <Text style={[styles.sectionLabel, { color: theme.textMuted }]}>WEEKLY RATE (KG/WEEK)</Text>
+            <View style={[styles.segmentedControl, { backgroundColor: theme.cardBg }]}>
               {RATES.map((rate) => (
                 <Pressable 
                   key={rate} 
                   style={[styles.segment, weeklyRate === rate && styles.segmentActive]}
                   onPress={() => setWeeklyRate(rate)}
                 >
-                  <Text style={[styles.segmentText, weeklyRate === rate && styles.segmentTextActive]}>
+                  <Text style={[styles.segmentText, { color: theme.textMuted }, weeklyRate === rate && styles.segmentTextActive]}>
                     {rate}
                   </Text>
                 </Pressable>
               ))}
             </View>
-            <Text style={styles.rateHint}>
+            <Text style={[styles.rateHint, { color: theme.textDim }]}>
               Recommended: 0.5 kg/week for sustainable results.
             </Text>
           </View>
@@ -136,21 +139,14 @@ export default function EditGoalScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#25292e',
   },
   scrollContent: {
     padding: 20,
-  },
-  saveBtn: {
-    color: '#8b5cf6',
-    fontSize: 16,
-    fontWeight: '700',
   },
   section: {
     marginTop: 24,
   },
   sectionLabel: {
-    color: '#9ca3af',
     fontSize: 12,
     fontWeight: '700',
     letterSpacing: 1,
@@ -163,11 +159,9 @@ const styles = StyleSheet.create({
   },
   goalCard: {
     width: '48%',
-    backgroundColor: '#1e2126',
     borderRadius: 20,
     padding: 16,
     borderWidth: 2,
-    borderColor: '#2a2d35',
     position: 'relative',
   },
   iconCircle: {
@@ -179,13 +173,11 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   goalLabel: {
-    color: '#ffffff',
     fontSize: 15,
     fontWeight: '700',
     marginBottom: 4,
   },
   goalDesc: {
-    color: '#6b7280',
     fontSize: 11,
     fontWeight: '500',
     lineHeight: 14,
@@ -201,21 +193,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   inputCard: {
-    backgroundColor: '#1e2126',
     borderRadius: 16,
     padding: 16,
     borderWidth: 1,
-    borderColor: '#2a2d35',
   },
   weightInput: {
-    color: '#ffffff',
     fontSize: 24,
     fontWeight: '800',
     textAlign: 'center',
   },
   segmentedControl: {
     flexDirection: 'row',
-    backgroundColor: '#1e2126',
     borderRadius: 14,
     padding: 4,
     gap: 4,
@@ -231,7 +219,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#8b5cf6',
   },
   segmentText: {
-    color: '#9ca3af',
     fontSize: 14,
     fontWeight: '700',
   },
@@ -239,7 +226,6 @@ const styles = StyleSheet.create({
     color: '#ffffff',
   },
   rateHint: {
-    color: '#6b7280',
     fontSize: 12,
     marginTop: 10,
     textAlign: 'center',

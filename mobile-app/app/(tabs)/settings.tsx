@@ -6,6 +6,7 @@ import { SettingsGroup, SettingsRow, SettingsToggleRow } from '../../components/
 import MealEditor from '../../components/settings/MealEditor';
 import UnitSelector from '../../components/settings/UnitSelector';
 import DailyGoalsEditor from '../../components/settings/DailyGoalsEditor';
+import { useThemeColors } from '../../types/theme';
 
 export default function SettingsScreen() {
   const {
@@ -22,10 +23,11 @@ export default function SettingsScreen() {
     setNotificationsEnabled,
     setMealReminders,
   } = useSettings();
+  const colors = useThemeColors();
 
   return (
     <NestableScrollContainer
-      style={styles.scrollView}
+      style={[styles.scrollView, { backgroundColor: colors.background }]}
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
     >
@@ -107,8 +109,8 @@ export default function SettingsScreen() {
 
       {/* Footer */}
       <View style={styles.footer}>
-        <Text style={styles.footerText}>Food Tracker</Text>
-        <Text style={styles.footerSub}>Made with 💜</Text>
+        <Text style={[styles.footerText, { color: colors.textDimmer }]}>Food Tracker</Text>
+        <Text style={[styles.footerSub, { color: colors.textDimmer }]}>Made with 💜</Text>
       </View>
 
       <View style={styles.bottomSpacer} />
@@ -119,7 +121,6 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
-    backgroundColor: '#25292e',
   },
   content: {
     paddingHorizontal: 20,
@@ -131,12 +132,10 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   footerText: {
-    color: '#4b5563',
     fontSize: 13,
     fontWeight: '600',
   },
   footerSub: {
-    color: '#4b5563',
     fontSize: 12,
   },
   bottomSpacer: {

@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { useThemeColors } from '../../types/theme';
 
 interface WeightProgressProps {
   currentWeight: number;
@@ -15,6 +16,7 @@ export default function WeightProgress({ currentWeight, targetWeight, startWeigh
     : 0;
 
   const isGaining = targetWeight > start;
+  const theme = useThemeColors();
 
   // Determine if the user has reached or passed their goal
   const reachedGoal = isGaining
@@ -33,44 +35,44 @@ export default function WeightProgress({ currentWeight, targetWeight, startWeigh
 
   return (
     <View style={styles.container}>
-      <Text style={styles.sectionTitle}>Weight Progress</Text>
+      <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>Weight Progress</Text>
 
-      <View style={styles.card}>
+      <View style={[styles.card, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
         {/* Progress bar */}
-        <View style={styles.barTrack}>
+        <View style={[styles.barTrack, { backgroundColor: theme.border }]}>
           <View style={[styles.barFill, { width: `${Math.min(progress, 1) * 100}%`, backgroundColor: reachedGoal ? '#4ade80' : '#8b5cf6' }]} />
           {/* Current marker */}
           <View style={[styles.marker, { left: `${Math.min(progress, 1) * 100}%` }]}>
-            <View style={[styles.markerDot, reachedGoal && { backgroundColor: '#4ade80', borderColor: '#1e2126' }]} />
+            <View style={[styles.markerDot, { borderColor: theme.cardBg }, reachedGoal && { backgroundColor: '#4ade80' }]} />
           </View>
         </View>
 
         {/* Labels */}
         <View style={styles.labelsRow}>
           <View style={styles.labelBlock}>
-            <Text style={styles.labelValue}>{start} kg</Text>
-            <Text style={styles.labelCaption}>start</Text>
+            <Text style={[styles.labelValue, { color: theme.textMuted }]}>{start} kg</Text>
+            <Text style={[styles.labelCaption, { color: theme.textDim }]}>start</Text>
           </View>
 
           <View style={styles.labelBlockCenter}>
-            <Text style={styles.currentValue}>{currentWeight} kg</Text>
-            <Text style={styles.labelCaption}>current</Text>
+            <Text style={[styles.currentValue, { color: theme.textPrimary }]}>{currentWeight} kg</Text>
+            <Text style={[styles.labelCaption, { color: theme.textDim }]}>current</Text>
           </View>
 
           <View style={[styles.labelBlock, { alignItems: 'flex-end' }]}>
-            <Text style={styles.labelValue}>{targetWeight} kg</Text>
-            <Text style={styles.labelCaption}>goal</Text>
+            <Text style={[styles.labelValue, { color: theme.textMuted }]}>{targetWeight} kg</Text>
+            <Text style={[styles.labelCaption, { color: theme.textDim }]}>goal</Text>
           </View>
         </View>
 
         {/* Remaining */}
-        <View style={styles.remainingRow}>
-          <Text style={styles.remainingText}>
+        <View style={[styles.remainingRow, { borderTopColor: theme.border }]}>
+          <Text style={[styles.remainingText, { color: theme.textMuted }]}>
             {reachedGoal ? (
               <Text style={[styles.remainingNumber, { color: '#4ade80' }]}>{getStatusText()}</Text>
             ) : (
               <>
-                <Text style={styles.remainingNumber}>{remaining} kg </Text>
+                <Text style={[styles.remainingNumber, { color: theme.textPrimary }]}>{remaining} kg </Text>
                 {targetWeight > currentWeight ? 'to gain' : 'to lose'}
               </>
             )}
@@ -89,21 +91,17 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   sectionTitle: {
-    color: '#ffffff',
     fontSize: 17,
     fontWeight: '700',
     marginBottom: 10,
   },
   card: {
-    backgroundColor: '#1e2126',
     borderRadius: 16,
     padding: 18,
     borderWidth: 1,
-    borderColor: '#2a2d35',
   },
   barTrack: {
     height: 10,
-    backgroundColor: '#2a2d35',
     borderRadius: 5,
     overflow: 'visible',
     position: 'relative',
@@ -124,7 +122,6 @@ const styles = StyleSheet.create({
     borderRadius: 9,
     backgroundColor: '#c77ffb',
     borderWidth: 3,
-    borderColor: '#1e2126',
   },
   labelsRow: {
     flexDirection: 'row',
@@ -138,17 +135,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   labelValue: {
-    color: '#9ca3af',
     fontSize: 13,
     fontWeight: '600',
   },
   currentValue: {
-    color: '#ffffff',
     fontSize: 15,
     fontWeight: '700',
   },
   labelCaption: {
-    color: '#6b7280',
     fontSize: 10,
     fontWeight: '500',
     textTransform: 'uppercase',
@@ -162,15 +156,12 @@ const styles = StyleSheet.create({
     marginTop: 14,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: '#2a2d35',
   },
   remainingText: {
-    color: '#9ca3af',
     fontSize: 13,
     fontWeight: '500',
   },
   remainingNumber: {
-    color: '#ffffff',
     fontWeight: '700',
   },
   percentText: {

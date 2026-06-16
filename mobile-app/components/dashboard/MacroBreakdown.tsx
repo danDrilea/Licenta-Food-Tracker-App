@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import MacroBar from './MacroBar';
+import { useThemeColors } from '../../types/theme';
 
 interface MacroData {
   consumed: number;
@@ -21,10 +22,11 @@ const MACRO_CONFIG = [
 
 export default function MacroBreakdown({ protein, carbs, fat }: MacroBreakdownProps) {
   const macros = { protein, carbs, fat };
+  const theme = useThemeColors();
 
   return (
     <View style={styles.container}>
-      <Text style={styles.sectionTitle}>Macronutrients</Text>
+      <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>Macronutrients</Text>
       {MACRO_CONFIG.map((macro) => (
         <MacroBar
           key={macro.key}
@@ -43,7 +45,6 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   sectionTitle: {
-    color: '#ffffff',
     fontSize: 17,
     fontWeight: '700',
     marginBottom: 14,

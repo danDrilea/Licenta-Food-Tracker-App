@@ -9,6 +9,7 @@ import {
   getBMICategory,
   UserProfile,
 } from '../../types/profile';
+import { useThemeColors } from '../../types/theme';
 
 interface HealthIndexesProps {
   user: UserProfile;
@@ -25,14 +26,15 @@ interface IndexCardProps {
 
 function IndexCard({ label, value, subtitle, color = '#ffffff', description, formula }: IndexCardProps) {
   const [showInfo, setShowInfo] = useState(false);
+  const theme = useThemeColors();
 
   return (
     <>
-      <View style={styles.indexCard}>
+      <View style={[styles.indexCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
         <View style={styles.indexHeader}>
-          <Text style={styles.indexLabel}>{label}</Text>
+          <Text style={[styles.indexLabel, { color: theme.textMuted }]}>{label}</Text>
           <Pressable onPress={() => setShowInfo(true)} hitSlop={10}>
-            <Ionicons name="information-circle-outline" size={20} color="#6b7280" />
+            <Ionicons name="information-circle-outline" size={20} color={theme.textDim} />
           </Pressable>
         </View>
 
@@ -42,19 +44,19 @@ function IndexCard({ label, value, subtitle, color = '#ffffff', description, for
 
       {/* Info Modal */}
       <Modal visible={showInfo} transparent animationType="fade" onRequestClose={() => setShowInfo(false)}>
-        <Pressable style={styles.modalOverlay} onPress={() => setShowInfo(false)}>
-          <View style={styles.modalContent}>
+        <Pressable style={[styles.modalOverlay, { backgroundColor: theme.overlay }]} onPress={() => setShowInfo(false)}>
+          <View style={[styles.modalContent, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>{label}</Text>
+              <Text style={[styles.modalTitle, { color: theme.textPrimary }]}>{label}</Text>
               <Pressable onPress={() => setShowInfo(false)} hitSlop={10}>
-                <Ionicons name="close" size={22} color="#9ca3af" />
+                <Ionicons name="close" size={22} color={theme.textMuted} />
               </Pressable>
             </View>
-            <Text style={styles.modalDescription}>{description}</Text>
+            <Text style={[styles.modalDescription, { color: theme.textSecondary }]}>{description}</Text>
             {formula && (
-              <View style={styles.formulaBox}>
+              <View style={[styles.formulaBox, { backgroundColor: theme.border }]}>
                 <Text style={styles.formulaLabel}>Formula</Text>
-                <Text style={styles.formulaText}>{formula}</Text>
+                <Text style={[styles.formulaText, { color: theme.textSecondary }]}>{formula}</Text>
               </View>
             )}
           </View>
@@ -70,10 +72,11 @@ export default function HealthIndexes({ user }: HealthIndexesProps) {
   const bmr = calculateBMR(user.currentWeightKg, user.heightCm, age, user.sex);
   const tdee = calculateTDEE(bmr, user.activityLevel);
   const bmiCat = getBMICategory(bmi);
+  const theme = useThemeColors();
 
   return (
     <View style={styles.container}>
-      <Text style={styles.sectionTitle}>Health Indexes</Text>
+      <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>Health Indexes</Text>
 
       <View style={styles.grid}>
         <IndexCard
@@ -108,7 +111,6 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   sectionTitle: {
-    color: '#ffffff',
     fontSize: 17,
     fontWeight: '700',
     marginBottom: 10,
@@ -119,11 +121,9 @@ const styles = StyleSheet.create({
   },
   indexCard: {
     flex: 1,
-    backgroundColor: '#1e2126',
     borderRadius: 14,
     padding: 14,
     borderWidth: 1,
-    borderColor: '#2a2d35',
   },
   indexHeader: {
     flexDirection: 'row',
@@ -132,7 +132,6 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   indexLabel: {
-    color: '#9ca3af',
     fontSize: 12,
     fontWeight: '700',
     textTransform: 'uppercase',
@@ -151,19 +150,16 @@ const styles = StyleSheet.create({
   // Modal
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 30,
   },
   modalContent: {
-    backgroundColor: '#1e2126',
     borderRadius: 20,
     padding: 24,
     width: '100%',
     maxWidth: 340,
     borderWidth: 1,
-    borderColor: '#2a2d35',
   },
   modalHeader: {
     flexDirection: 'row',
@@ -172,18 +168,15 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   modalTitle: {
-    color: '#ffffff',
     fontSize: 20,
     fontWeight: '700',
   },
   modalDescription: {
-    color: '#d1d5db',
     fontSize: 14,
     fontWeight: '400',
     lineHeight: 22,
   },
   formulaBox: {
-    backgroundColor: '#2a2d35',
     borderRadius: 12,
     padding: 14,
     marginTop: 16,
@@ -197,7 +190,6 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   formulaText: {
-    color: '#e5e7eb',
     fontSize: 13,
     fontWeight: '500',
     fontStyle: 'italic',

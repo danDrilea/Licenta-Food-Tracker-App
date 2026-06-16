@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { useThemeColors } from '../../types/theme';
 
 export interface DashboardMealData {
   id: string;
@@ -41,12 +42,13 @@ function getMealIcon(meal: DashboardMealData, index: number): keyof typeof Ionic
 export default function MealSummary({ meals, onMealPress }: MealSummaryProps) {
   // Enforce max meals
   const displayMeals = meals.slice(0, MAX_MEALS);
+  const theme = useThemeColors();
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.sectionTitle}>Today's Meals</Text>
-        <Text style={styles.mealCount}>{displayMeals.length} meals</Text>
+        <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>Today's Meals</Text>
+        <Text style={[styles.mealCount, { color: theme.textDim }]}>{displayMeals.length} meals</Text>
       </View>
 
       <View style={styles.grid}>
@@ -59,8 +61,9 @@ export default function MealSummary({ meals, onMealPress }: MealSummaryProps) {
               key={meal.id}
               style={({ pressed }) => [
                 styles.card,
-                !isLogged && styles.cardEmpty,
-                pressed && styles.cardPressed,
+                { backgroundColor: theme.cardBg, borderColor: theme.border },
+                !isLogged && { borderColor: theme.cardBg, opacity: 0.6 },
+                pressed && { backgroundColor: theme.rowPressed, opacity: 1, transform: [{ scale: 0.97 }] },
               ]}
               onPress={() => {
                 console.log(`Meal pressed: ${meal.name} (id: ${meal.id})`);
@@ -71,12 +74,12 @@ export default function MealSummary({ meals, onMealPress }: MealSummaryProps) {
                 <Ionicons
                   name={icon}
                   size={20}
-                  color={isLogged ? '#c77ffb' : '#4b5563'}
+                  color={isLogged ? '#c77ffb' : theme.textDimmer}
                 />
               </View>
 
               <Text
-                style={[styles.mealName, !isLogged && styles.textMuted]}
+                style={[styles.mealName, { color: theme.textSecondary }, !isLogged && { color: theme.textDim }]}
                 numberOfLines={1}
               >
                 {meal.name}
@@ -84,13 +87,13 @@ export default function MealSummary({ meals, onMealPress }: MealSummaryProps) {
 
               {isLogged ? (
                 <>
-                  <Text style={styles.calories}>{meal.calories} kcal</Text>
-                  <Text style={styles.itemCount}>
+                  <Text style={[styles.calories, { color: theme.textPrimary }]}>{meal.calories} kcal</Text>
+                  <Text style={[styles.itemCount, { color: theme.textDim }]}>
                     {meal.items} {meal.items === 1 ? 'item' : 'items'}
                   </Text>
                 </>
               ) : (
-                <Text style={styles.notLogged}>Not logged</Text>
+                <Text style={[styles.notLogged, { color: theme.textDimmer }]}>Not logged</Text>
               )}
             </Pressable>
           );
@@ -111,12 +114,10 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   sectionTitle: {
-    color: '#ffffff',
     fontSize: 17,
     fontWeight: '700',
   },
   mealCount: {
-    color: '#6b7280',
     fontSize: 12,
     fontWeight: '500',
   },
@@ -128,20 +129,9 @@ const styles = StyleSheet.create({
   card: {
     flexBasis: '47%',
     flexGrow: 1,
-    backgroundColor: '#1e2126',
     borderRadius: 14,
     padding: 14,
     borderWidth: 1,
-    borderColor: '#2a2d35',
-  },
-  cardEmpty: {
-    borderColor: '#1e2126',
-    opacity: 0.6,
-  },
-  cardPressed: {
-    backgroundColor: '#2a2d35',
-    opacity: 1,
-    transform: [{ scale: 0.97 }],
   },
   iconCircle: {
     width: 36,
@@ -156,27 +146,20 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(75, 85, 99, 0.15)',
   },
   mealName: {
-    color: '#e5e7eb',
     fontSize: 13,
     fontWeight: '600',
     marginBottom: 4,
   },
-  textMuted: {
-    color: '#6b7280',
-  },
   calories: {
-    color: '#ffffff',
     fontSize: 16,
     fontWeight: '700',
   },
   itemCount: {
-    color: '#6b7280',
     fontSize: 11,
     fontWeight: '500',
     marginTop: 2,
   },
   notLogged: {
-    color: '#4b5563',
     fontSize: 12,
     fontWeight: '500',
     fontStyle: 'italic',
