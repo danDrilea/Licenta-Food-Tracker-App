@@ -25,9 +25,10 @@ interface MealSectionProps {
   onAddFood?: () => void;
   onEditFood?: (item: FoodItem) => void;
   onAnalyzeMeal?: (meal: MealData) => void;
+  advice?: string | null;
 }
 
-export default function MealSection({ meal, onAddFood, onEditFood, onAnalyzeMeal }: MealSectionProps) {
+export default function MealSection({ meal, onAddFood, onEditFood, onAnalyzeMeal, advice }: MealSectionProps) {
   const totalCalories = meal.items.reduce((sum, item) => sum + item.calories, 0);
   const hasItems = meal.items.length > 0;
   const theme = useThemeColors();
@@ -94,7 +95,7 @@ export default function MealSection({ meal, onAddFood, onEditFood, onAnalyzeMeal
           <Text style={[styles.actionButtonText, { color: '#8b5cf6' }]}>Add food</Text>
         </Pressable>
 
-        {hasItems && onAnalyzeMeal && (
+        {onAnalyzeMeal && (
           <>
             <View style={[styles.divider, { backgroundColor: theme.border }]} />
             <Pressable
@@ -110,6 +111,17 @@ export default function MealSection({ meal, onAddFood, onEditFood, onAnalyzeMeal
           </>
         )}
       </View>
+
+      {/* Advice container inside card */}
+      {advice && (
+        <View style={[styles.adviceContainer, { backgroundColor: 'rgba(199, 127, 251, 0.06)', borderTopColor: theme.border }]}>
+          <View style={styles.adviceHeader}>
+            <Ionicons name="sparkles" size={14} color="#c77ffb" />
+            <Text style={[styles.adviceTitle, { color: theme.textPrimary }]}>AI advice</Text>
+          </View>
+          <Text style={[styles.adviceText, { color: theme.textSecondary }]}>{advice}</Text>
+        </View>
+      )}
     </View>
   );
 }
@@ -229,5 +241,26 @@ const styles = StyleSheet.create({
   divider: {
     width: 1,
     height: 24,
+  },
+  adviceContainer: {
+    padding: 14,
+    borderTopWidth: 1,
+  },
+  adviceHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 6,
+  },
+  adviceTitle: {
+    fontSize: 12,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  adviceText: {
+    fontSize: 13,
+    lineHeight: 18,
+    fontWeight: '500',
   },
 });

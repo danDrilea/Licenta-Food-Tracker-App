@@ -1,12 +1,11 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { StyleSheet, View, ScrollView } from 'react-native';
+import { StyleSheet, View, ScrollView, Alert, Modal, Text, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import DateStrip from '../../components/journal/DateStrip';
 import DailyMacroSummary from '../../components/journal/DailyMacroSummary';
 import MealSection, { MealData } from '../../components/journal/MealSection';
 import WaterTracker from '../../components/dashboard/WaterTracker';
 import AddFoodModal from '../../components/journal/AddFoodModal';
-import MealAdviceModal from '../../components/journal/MealAdviceModal';
 import { useSettings } from '../../contexts/SettingsContext';
 import { useFoodLogs } from '../../hooks/useFoodLogs';
 import { useDailyLogs } from '../../hooks/useDailyLogs';
@@ -24,23 +23,22 @@ export default function JournalScreen() {
   const { profile } = useProfile();
   const colors = useThemeColors();
 
-  // AI Advice Modal State
-  const [adviceModalVisible, setAdviceModalVisible] = useState(false);
+  // AI Advice States
+  const [mealAdvices, setMealAdvices] = useState<Record<string, string>>({});
   const [adviceLoading, setAdviceLoading] = useState(false);
-  const [adviceText, setAdviceText] = useState<string | null>(null);
-  const [adviceError, setAdviceError] = useState<string | null>(null);
-  const [adviceMealSummary, setAdviceMealSummary] = useState<any>(null);
-  const [adviceDayContext, setAdviceDayContext] = useState<any>(null);
   const [activeMealForAdvice, setActiveMealForAdvice] = useState<string | null>(null);
 
   const handleAnalyzeMeal = async (meal: MealData) => {
+    if (meal.items.length === 0) {
+      Alert.alert(
+        'No Food Logged',
+        'Please add some food items to this meal before requesting AI Advice!'
+      );
+      return;
+    }
+
     setActiveMealForAdvice(meal.name);
-    setAdviceModalVisible(true);
     setAdviceLoading(true);
-    setAdviceError(null);
-    setAdviceText(null);
-    setAdviceMealSummary(null);
-    setAdviceDayContext(null);
 
     try {
       const items = meal.items.map(item => {
@@ -118,15 +116,19 @@ export default function JournalScreen() {
       console.log('AI Advice Response Result:', JSON.stringify(result, null, 2));
       
       if (result.status === 'success') {
-        setAdviceText(result.advice);
-        setAdviceMealSummary(result.meal_summary);
-        setAdviceDayContext(result.day_context);
+        setMealAdvices(prev => ({
+          ...prev,
+          [meal.id]: result.advice
+        }));
       } else {
         throw new Error(result.message || 'Failed to get advice');
       }
     } catch (err: any) {
       console.error('API Error:', err);
-      setAdviceError(err.message || 'Cannot connect to Raspberry Pi server. Please check the network.');
+      Alert.alert(
+        'AI Advice Error',
+        err.message || 'Cannot connect to Raspberry Pi server. Please check your network and settings.'
+      );
     } finally {
       setAdviceLoading(false);
     }
@@ -239,6 +241,7 @@ export default function JournalScreen() {
                   setAddingFoodToMeal({ id: meal.id, name: meal.name });
                 }}
                 onAnalyzeMeal={handleAnalyzeMeal}
+                advice={mealAdvices[meal.id]}
               />
             </View>
           ))}
@@ -286,17 +289,15 @@ export default function JournalScreen() {
         }}
       />
 
-      {/* Meal Advice Modal */}
-      <MealAdviceModal
-        visible={adviceModalVisible}
-        onClose={() => setAdviceModalVisible(false)}
-        mealName={activeMealForAdvice ?? ''}
-        loading={adviceLoading}
-        error={adviceError}
-        advice={adviceText}
-        mealSummary={adviceMealSummary}
-        dayContext={adviceDayContext}
-      />
+      {/* AI Advice Waiting Modal Overlay */}
+      <Modal visible={adviceLoading} transparent animationType="fade">
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' }}>
+          <View style={{ backgroundColor: colors.cardBg, padding: 24, borderRadius: 16, alignItems: 'center', gap: 12, borderWidth: 1, borderColor: colors.border }}>
+            <ActivityIndicator size="large" color="#c77ffb" />
+            <Text style={{ color: colors.textPrimary, fontSize: 15, fontWeight: '600' }}>AI is thinking...</Text>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
