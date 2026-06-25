@@ -537,6 +537,7 @@ class FoodItem(BaseModel):
     protein: float  # grams
     carbs: float    # grams
     fats: float     # grams
+    calories: float # kcal
 
 
 class MealAdviceRequest(BaseModel):
@@ -571,7 +572,7 @@ def _build_meal_prompt(req: MealAdviceRequest) -> str:
     for item in req.items:
         lines.append(
             f"- {item.name}: {item.grams:.0f}g "
-            f"(protein {item.protein:.1f}g, carbs {item.carbs:.1f}g, fats {item.fats:.1f}g)"
+            f"({item.calories:.0f} kcal, protein {item.protein:.1f}g, carbs {item.carbs:.1f}g, fats {item.fats:.1f}g)"
         )
         total_g += item.grams
         total_p += item.protein
