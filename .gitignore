@@ -5,6 +5,9 @@ computer-vision-training/**/*.jpeg
 computer-vision-training/**/*.png
 computer-vision-training/**/*.json
 
+#Ignore llm pi side
+llm
+
 # Ignore generated YOLO labels
 computer-vision-training/**/labels/
 computer-vision-training/**/*.txt
