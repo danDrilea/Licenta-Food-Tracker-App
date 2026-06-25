@@ -1,5 +1,4 @@
-import React from 'react';
-import { View, Text, StyleSheet, Pressable, Switch } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Switch, TextInput } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useThemeColors } from '../../types/theme';
 
@@ -87,6 +86,64 @@ export function SettingsToggleRow({ icon, iconColor = '#8b5cf6', label, value, o
         />
       }
     />
+  );
+}
+
+interface SettingsInputRowProps {
+  icon: keyof typeof Ionicons.glyphMap;
+  iconColor?: string;
+  label: string;
+  value: string;
+  onChangeText: (text: string) => void;
+  placeholder?: string;
+  isLast?: boolean;
+}
+
+export function SettingsInputRow({
+  icon,
+  iconColor = '#8b5cf6',
+  label,
+  value,
+  onChangeText,
+  placeholder,
+  isLast,
+}: SettingsInputRowProps) {
+  const theme = useThemeColors();
+  return (
+    <View
+      style={[
+        !isLast && [styles.rowBorder, { borderBottomColor: theme.border }],
+        { paddingVertical: 14, paddingHorizontal: 16 }
+      ]}
+    >
+      <View style={[styles.rowLeft, { marginBottom: 10 }]}>
+        <View style={[styles.rowIcon, { backgroundColor: `${iconColor}20` }]}>
+          <Ionicons name={icon} size={18} color={iconColor} />
+        </View>
+        <Text style={[styles.rowLabel, { color: theme.textSecondary }]}>{label}</Text>
+      </View>
+
+      <TextInput
+        style={{
+          color: theme.textPrimary,
+          fontSize: 14,
+          fontWeight: '500',
+          backgroundColor: theme.inputBg,
+          borderColor: theme.inputBorder,
+          borderWidth: 1,
+          borderRadius: 10,
+          paddingHorizontal: 12,
+          paddingVertical: 8,
+          width: '100%',
+        }}
+        value={value}
+        onChangeText={onChangeText}
+        placeholder={placeholder}
+        placeholderTextColor={theme.textDim}
+        autoCapitalize="none"
+        autoCorrect={false}
+      />
+    </View>
   );
 }
 

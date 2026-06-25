@@ -6,9 +6,11 @@ import DailyMacroSummary from '../../components/journal/DailyMacroSummary';
 import MealSection, { MealData } from '../../components/journal/MealSection';
 import WaterTracker from '../../components/dashboard/WaterTracker';
 import AddFoodModal from '../../components/journal/AddFoodModal';
+import MealAdviceModal from '../../components/journal/MealAdviceModal';
 import { useSettings } from '../../contexts/SettingsContext';
 import { useFoodLogs } from '../../hooks/useFoodLogs';
 import { useDailyLogs } from '../../hooks/useDailyLogs';
+import { useProfile } from '../../hooks/useProfile';
 import { useThemeColors } from '../../types/theme';
 
 export default function JournalScreen() {
@@ -19,7 +21,116 @@ export default function JournalScreen() {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [addingFoodToMeal, setAddingFoodToMeal] = useState<{id: string, name: string} | null>(null);
   const { settings } = useSettings();
+  const { profile } = useProfile();
   const colors = useThemeColors();
+
+  // AI Advice Modal State
+  const [adviceModalVisible, setAdviceModalVisible] = useState(false);
+  const [adviceLoading, setAdviceLoading] = useState(false);
+  const [adviceText, setAdviceText] = useState<string | null>(null);
+  const [adviceError, setAdviceError] = useState<string | null>(null);
+  const [adviceMealSummary, setAdviceMealSummary] = useState<any>(null);
+  const [adviceDayContext, setAdviceDayContext] = useState<any>(null);
+  const [activeMealForAdvice, setActiveMealForAdvice] = useState<string | null>(null);
+
+  const handleAnalyzeMeal = async (meal: MealData) => {
+    setActiveMealForAdvice(meal.name);
+    setAdviceModalVisible(true);
+    setAdviceLoading(true);
+    setAdviceError(null);
+    setAdviceText(null);
+    setAdviceMealSummary(null);
+    setAdviceDayContext(null);
+
+    try {
+      const items = meal.items.map(item => {
+        const amountStr = item.amount || '';
+        const match = amountStr.match(/(\d+(?:\.\d+)?)\s*g/i);
+        let grams = 100.0;
+        if (match) {
+          grams = parseFloat(match[1]);
+        } else {
+          const fallbackMatch = amountStr.match(/(\d+(?:\.\d+)?)/);
+          if (fallbackMatch) {
+            grams = parseFloat(fallbackMatch[1]);
+          }
+        }
+
+        return {
+          name: item.name,
+          grams: grams,
+          protein: item.protein ?? 0.0,
+          carbs: item.carbs ?? 0.0,
+          fats: item.fat ?? 0.0,
+          calories: item.calories
+        };
+      });
+
+      const mealCalories = meal.items.reduce((sum, item) => sum + item.calories, 0);
+
+      const consumedBefore = logs.reduce((acc, log) => {
+        if (log.meal_id !== meal.id) {
+          acc.calories += log.calories;
+          acc.protein += log.protein;
+          acc.carbs += log.carbs;
+          acc.fats += log.fat;
+        }
+        return acc;
+      }, { calories: 0, protein: 0, carbs: 0, fats: 0 });
+
+      const plannedMealsCount = settings.meals.filter(m => m.enabled).length;
+      const dietaryGoal = profile?.goal?.type || 'maintenance';
+
+      const payload = {
+        items,
+        target_calories: settings.dailyGoals.calories,
+        target_protein: settings.dailyGoals.protein,
+        target_carbs: settings.dailyGoals.carbs,
+        target_fats: settings.dailyGoals.fat,
+        meal_calories: mealCalories,
+        planned_meals_count: plannedMealsCount,
+        meal_type: meal.name,
+        dietary_goal: dietaryGoal,
+        consumed_calories_before: consumedBefore.calories,
+        consumed_protein_before: consumedBefore.protein,
+        consumed_carbs_before: consumedBefore.carbs,
+        consumed_fats_before: consumedBefore.fats,
+      };
+
+      const baseUrl = settings.rpiServerUrl || 'http://danalrpi.local:8000';
+      const cleanUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
+
+      console.log('AI Advice Request Payload:', JSON.stringify(payload, null, 2));
+
+      const response = await fetch(`${cleanUrl}/meal-advice`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Server returned error: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log('AI Advice Response Result:', JSON.stringify(result, null, 2));
+      
+      if (result.status === 'success') {
+        setAdviceText(result.advice);
+        setAdviceMealSummary(result.meal_summary);
+        setAdviceDayContext(result.day_context);
+      } else {
+        throw new Error(result.message || 'Failed to get advice');
+      }
+    } catch (err: any) {
+      console.error('API Error:', err);
+      setAdviceError(err.message || 'Cannot connect to Raspberry Pi server. Please check the network.');
+    } finally {
+      setAdviceLoading(false);
+    }
+  };
 
   // Handle navigation from Dashboard
   useEffect(() => {
@@ -127,6 +238,7 @@ export default function JournalScreen() {
                   setEditingFoodItem(item);
                   setAddingFoodToMeal({ id: meal.id, name: meal.name });
                 }}
+                onAnalyzeMeal={handleAnalyzeMeal}
               />
             </View>
           ))}
@@ -172,6 +284,18 @@ export default function JournalScreen() {
             }
           }
         }}
+      />
+
+      {/* Meal Advice Modal */}
+      <MealAdviceModal
+        visible={adviceModalVisible}
+        onClose={() => setAdviceModalVisible(false)}
+        mealName={activeMealForAdvice ?? ''}
+        loading={adviceLoading}
+        error={adviceError}
+        advice={adviceText}
+        mealSummary={adviceMealSummary}
+        dayContext={adviceDayContext}
       />
     </View>
   );

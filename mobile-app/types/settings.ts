@@ -30,6 +30,7 @@ export interface AppSettings {
   dailyGoals: DailyGoals;
   notificationsEnabled: boolean;
   mealReminders: boolean;
+  rpiServerUrl: string;
 }
 
 export const MAX_MEALS = 8;
@@ -65,6 +66,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   },
   notificationsEnabled: false,
   mealReminders: false,
+  rpiServerUrl: 'http://danalrpi.local:8000',
 };
 
 // Icon options for custom meals

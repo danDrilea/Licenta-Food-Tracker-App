@@ -24,9 +24,10 @@ interface MealSectionProps {
   meal: MealData;
   onAddFood?: () => void;
   onEditFood?: (item: FoodItem) => void;
+  onAnalyzeMeal?: (meal: MealData) => void;
 }
 
-export default function MealSection({ meal, onAddFood, onEditFood }: MealSectionProps) {
+export default function MealSection({ meal, onAddFood, onEditFood, onAnalyzeMeal }: MealSectionProps) {
   const totalCalories = meal.items.reduce((sum, item) => sum + item.calories, 0);
   const hasItems = meal.items.length > 0;
   const theme = useThemeColors();
@@ -80,18 +81,35 @@ export default function MealSection({ meal, onAddFood, onEditFood }: MealSection
         </View>
       )}
 
-      {/* Add food button */}
-      <Pressable
-        style={({ pressed }) => [
-          styles.addButton,
-          { borderTopColor: theme.border },
-          pressed && styles.addButtonPressed,
-        ]}
-        onPress={onAddFood}
-      >
-        <Ionicons name="add-circle-outline" size={18} color="#8b5cf6" />
-        <Text style={styles.addButtonText}>Add food</Text>
-      </Pressable>
+      {/* Bottom action row */}
+      <View style={[styles.actionRow, { borderTopColor: theme.border }]}>
+        <Pressable
+          style={({ pressed }) => [
+            styles.actionButton,
+            pressed && styles.actionButtonPressed,
+          ]}
+          onPress={onAddFood}
+        >
+          <Ionicons name="add-circle-outline" size={18} color="#8b5cf6" />
+          <Text style={[styles.actionButtonText, { color: '#8b5cf6' }]}>Add food</Text>
+        </Pressable>
+
+        {hasItems && onAnalyzeMeal && (
+          <>
+            <View style={[styles.divider, { backgroundColor: theme.border }]} />
+            <Pressable
+              style={({ pressed }) => [
+                styles.actionButton,
+                pressed && styles.actionButtonPressed,
+              ]}
+              onPress={() => onAnalyzeMeal(meal)}
+            >
+              <Ionicons name="sparkles-outline" size={18} color="#c77ffb" />
+              <Text style={[styles.actionButtonText, { color: '#c77ffb' }]}>AI Advice</Text>
+            </Pressable>
+          </>
+        )}
+      </View>
     </View>
   );
 }
@@ -188,20 +206,28 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontStyle: 'italic',
   },
-  addButton: {
+  actionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderTopWidth: 1,
+  },
+  actionButton: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    paddingVertical: 12,
-    borderTopWidth: 1,
+    paddingVertical: 14,
   },
-  addButtonPressed: {
-    backgroundColor: 'rgba(139, 92, 246, 0.08)',
+  actionButtonPressed: {
+    backgroundColor: 'rgba(128, 128, 128, 0.08)',
   },
-  addButtonText: {
-    color: '#8b5cf6',
+  actionButtonText: {
     fontSize: 14,
     fontWeight: '600',
+  },
+  divider: {
+    width: 1,
+    height: 24,
   },
 });

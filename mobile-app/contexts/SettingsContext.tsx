@@ -18,6 +18,7 @@ interface SettingsContextType {
   updateDailyGoals: (goals: DailyGoals) => void;
   setNotificationsEnabled: (enabled: boolean) => void;
   setMealReminders: (enabled: boolean) => void;
+  setRpiServerUrl: (url: string) => void;
 }
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
@@ -61,6 +62,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
         dailyGoals,
         notificationsEnabled: basicMap.notificationsEnabled === 'true',
         mealReminders: basicMap.mealReminders === 'true',
+        rpiServerUrl: basicMap.rpiServerUrl ?? 'http://danalrpi.local:8000',
       });
     } catch (e) {
       console.error('Failed to load settings from DB:', e);
@@ -89,6 +91,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
   const setEnergyUnit = useCallback((unit: EnergyUnit) => updateBasicSetting('energyUnit', unit), [updateBasicSetting]);
   const setNotificationsEnabled = useCallback((enabled: boolean) => updateBasicSetting('notificationsEnabled', String(enabled)), [updateBasicSetting]);
   const setMealReminders = useCallback((enabled: boolean) => updateBasicSetting('mealReminders', String(enabled)), [updateBasicSetting]);
+  const setRpiServerUrl = useCallback((url: string) => updateBasicSetting('rpiServerUrl', url), [updateBasicSetting]);
 
   const updateDailyGoals = useCallback(async (goals: DailyGoals) => {
     await db.runAsync(
@@ -143,6 +146,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
         updateDailyGoals,
         setNotificationsEnabled,
         setMealReminders,
+        setRpiServerUrl,
       }}
     >
       {children}

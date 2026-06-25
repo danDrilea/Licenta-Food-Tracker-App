@@ -2,7 +2,7 @@ import React from 'react';
 import { StyleSheet, View, Text } from 'react-native';
 import { NestableScrollContainer } from 'react-native-draggable-flatlist';
 import { useSettings } from '../../contexts/SettingsContext';
-import { SettingsGroup, SettingsRow, SettingsToggleRow } from '../../components/settings/SettingsRow';
+import { SettingsGroup, SettingsRow, SettingsToggleRow, SettingsInputRow } from '../../components/settings/SettingsRow';
 import MealEditor from '../../components/settings/MealEditor';
 import UnitSelector from '../../components/settings/UnitSelector';
 import DailyGoalsEditor from '../../components/settings/DailyGoalsEditor';
@@ -22,6 +22,7 @@ export default function SettingsScreen() {
     updateDailyGoals,
     setNotificationsEnabled,
     setMealReminders,
+    setRpiServerUrl,
   } = useSettings();
   const colors = useThemeColors();
 
@@ -67,6 +68,19 @@ export default function SettingsScreen() {
         onHeightChange={setHeightUnit}
         onEnergyChange={setEnergyUnit}
       />
+
+      {/* ─── Server Settings ─── */}
+      <SettingsGroup title="Server Connection">
+        <SettingsInputRow
+          icon="server-outline"
+          iconColor="#c77ffb"
+          label="Raspberry Pi URL"
+          value={settings.rpiServerUrl}
+          onChangeText={setRpiServerUrl}
+          placeholder="http://192.168.1.X:8000"
+          isLast
+        />
+      </SettingsGroup>
 
       {/* ─── Notifications ─── */}
       <SettingsGroup title="Notifications">
