@@ -3,6 +3,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { useState } from 'react';
 import { View, Text, StyleSheet, Pressable, Modal, Image } from 'react-native';
 import { useThemeColors } from '../../types/theme';
+import ScanPhotoFlowModal from '../../components/journal/ScanPhotoFlowModal';
 
 const MENU_OPTIONS = [
   { icon: 'camera' as const, label: 'Scan Photo' },
@@ -16,6 +17,7 @@ const triangleImg = require('../../assets/images/cool-triangle.webp');
 export default function TabLayout() {
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [scanModalVisible, setScanModalVisible] = useState(false);
   const colors = useThemeColors();
 
   return (
@@ -126,6 +128,8 @@ export default function TabLayout() {
                   setMenuOpen(false);
                   if (option.label === 'Log Weight') {
                     router.push('/log-weight');
+                  } else if (option.label === 'Scan Photo') {
+                    setScanModalVisible(true);
                   } else {
                     console.log(option.label);
                   }
@@ -140,6 +144,12 @@ export default function TabLayout() {
           </Pressable>
         </Pressable>
       </Modal>
+
+      {/* Scan Photo Flow Modal */}
+      <ScanPhotoFlowModal
+        visible={scanModalVisible}
+        onClose={() => setScanModalVisible(false)}
+      />
     </>
   );
 }

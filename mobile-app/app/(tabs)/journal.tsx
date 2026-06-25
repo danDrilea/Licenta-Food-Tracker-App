@@ -18,7 +18,7 @@ export default function JournalScreen() {
   const scrollViewRef = useRef<ScrollView>(null);
   const mealPositions = useRef<Record<string, number>>({});
   const [selectedDate, setSelectedDate] = useState(new Date());
-  const [addingFoodToMeal, setAddingFoodToMeal] = useState<{id: string, name: string} | null>(null);
+  const [addingFoodToMeal, setAddingFoodToMeal] = useState<{ id: string, name: string } | null>(null);
   const { settings } = useSettings();
   const { profile } = useProfile();
   const colors = useThemeColors();
@@ -26,7 +26,6 @@ export default function JournalScreen() {
   // AI Advice States
   const [mealAdvices, setMealAdvices] = useState<Record<string, string>>({});
   const [adviceLoading, setAdviceLoading] = useState(false);
-  const [activeMealForAdvice, setActiveMealForAdvice] = useState<string | null>(null);
 
   const handleAnalyzeMeal = async (meal: MealData) => {
     if (meal.items.length === 0) {
@@ -37,7 +36,6 @@ export default function JournalScreen() {
       return;
     }
 
-    setActiveMealForAdvice(meal.name);
     setAdviceLoading(true);
 
     try {
@@ -114,7 +112,7 @@ export default function JournalScreen() {
 
       const result = await response.json();
       console.log('AI Advice Response Result:', JSON.stringify(result, null, 2));
-      
+
       if (result.status === 'success') {
         setMealAdvices(prev => ({
           ...prev,
@@ -141,7 +139,7 @@ export default function JournalScreen() {
       const meal = settings.meals.find(m => m.id === mealId);
       if (meal) {
         setSelectedDate(new Date()); // Ensure we are on "Today"
-        
+
         // Wait a bit for layout to settle, then scroll
         setTimeout(() => {
           const y = mealPositions.current[mealId];
@@ -149,13 +147,13 @@ export default function JournalScreen() {
             scrollViewRef.current.scrollTo({ y, animated: true });
           }
         }, 100);
-        
+
         // Clear the param
         router.setParams({ selectedMealId: '' });
       }
     }
   }, [params.selectedMealId, settings.meals, router]);
-  
+
   // Format date as YYYY-MM-DD local time to avoid timezone shifts
   const dateStr = useMemo(() => {
     const offset = selectedDate.getTimezoneOffset();
@@ -179,12 +177,18 @@ export default function JournalScreen() {
 
   // Calculate daily totals
   const totals = useMemo(() => {
-    return logs.reduce((acc, log) => ({
-      calories: acc.calories + log.calories,
-      protein: acc.protein + log.protein,
-      carbs: acc.carbs + log.carbs,
-      fat: acc.fat + log.fat,
+    const raw = logs.reduce((acc, log) => ({
+      calories: acc.calories + (log.calories || 0),
+      protein: acc.protein + (log.protein || 0),
+      carbs: acc.carbs + (log.carbs || 0),
+      fat: acc.fat + (log.fat || 0),
     }), { calories: 0, protein: 0, carbs: 0, fat: 0 });
+    return {
+      calories: Math.round(raw.calories || 0),
+      protein: Math.round(raw.protein || 0),
+      carbs: Math.round(raw.carbs || 0),
+      fat: Math.round(raw.fat || 0),
+    };
   }, [logs]);
 
   // Build macros prop
@@ -227,8 +231,8 @@ export default function JournalScreen() {
         {/* Meal sections */}
         <View style={styles.mealsContainer}>
           {meals.map((meal) => (
-            <View 
-              key={meal.id} 
+            <View
+              key={meal.id}
               onLayout={(e) => {
                 mealPositions.current[meal.id] = e.nativeEvent.layout.y;
               }}

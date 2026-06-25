@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useThemeColors } from '../../types/theme';
@@ -32,6 +32,14 @@ export default function MealSection({ meal, onAddFood, onEditFood, onAnalyzeMeal
   const totalCalories = meal.items.reduce((sum, item) => sum + item.calories, 0);
   const hasItems = meal.items.length > 0;
   const theme = useThemeColors();
+  const [isAdviceCollapsed, setIsAdviceCollapsed] = useState(false);
+
+  // Auto-expand advice when new advice arrives
+  useEffect(() => {
+    if (advice) {
+      setIsAdviceCollapsed(false);
+    }
+  }, [advice]);
 
   return (
     <View style={[styles.container, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
@@ -115,11 +123,26 @@ export default function MealSection({ meal, onAddFood, onEditFood, onAnalyzeMeal
       {/* Advice container inside card */}
       {advice && (
         <View style={[styles.adviceContainer, { backgroundColor: 'rgba(199, 127, 251, 0.06)', borderTopColor: theme.border }]}>
-          <View style={styles.adviceHeader}>
+          <Pressable
+            onPress={() => setIsAdviceCollapsed(!isAdviceCollapsed)}
+            style={({ pressed }) => [
+              styles.adviceHeader,
+              isAdviceCollapsed && { marginBottom: 0 },
+              pressed && { opacity: 0.7 }
+            ]}
+          >
             <Ionicons name="sparkles" size={14} color="#c77ffb" />
             <Text style={[styles.adviceTitle, { color: theme.textPrimary }]}>AI advice</Text>
-          </View>
-          <Text style={[styles.adviceText, { color: theme.textSecondary }]}>{advice}</Text>
+            <View style={{ flex: 1 }} />
+            <Ionicons 
+              name={isAdviceCollapsed ? "chevron-down-outline" : "chevron-up-outline"} 
+              size={18} 
+              color="#c77ffb" 
+            />
+          </Pressable>
+          {!isAdviceCollapsed && (
+            <Text style={[styles.adviceText, { color: theme.textSecondary }]}>{advice}</Text>
+          )}
         </View>
       )}
     </View>

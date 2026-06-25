@@ -35,10 +35,10 @@ export default function AddFoodModal({ visible, mealName, initialData, onClose, 
       if (initialData) {
         setName(initialData.name);
         setAmount(initialData.amount);
-        setCalories(initialData.calories.toString());
-        setProtein(initialData.protein.toString());
-        setCarbs(initialData.carbs.toString());
-        setFat(initialData.fat.toString());
+        setCalories(initialData.calories ? Math.round(initialData.calories).toString() : '0');
+        setProtein(initialData.protein !== undefined ? Number(Number(initialData.protein).toFixed(1)).toString() : '');
+        setCarbs(initialData.carbs !== undefined ? Number(Number(initialData.carbs).toFixed(1)).toString() : '');
+        setFat(initialData.fat !== undefined ? Number(Number(initialData.fat).toFixed(1)).toString() : '');
       } else {
         setName('');
         setAmount('');

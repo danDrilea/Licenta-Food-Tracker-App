@@ -58,12 +58,18 @@ export default function DashboardScreen() {
 
   // Calculate daily totals
   const totals = useMemo(() => {
-    return logs.reduce((acc, log) => ({
-      calories: acc.calories + log.calories,
-      protein: acc.protein + log.protein,
-      carbs: acc.carbs + log.carbs,
-      fat: acc.fat + log.fat,
+    const raw = logs.reduce((acc, log) => ({
+      calories: acc.calories + (log.calories || 0),
+      protein: acc.protein + (log.protein || 0),
+      carbs: acc.carbs + (log.carbs || 0),
+      fat: acc.fat + (log.fat || 0),
     }), { calories: 0, protein: 0, carbs: 0, fat: 0 });
+    return {
+      calories: Math.round(raw.calories || 0),
+      protein: Math.round(raw.protein || 0),
+      carbs: Math.round(raw.carbs || 0),
+      fat: Math.round(raw.fat || 0),
+    };
   }, [logs]);
 
   // Build macros prop

@@ -1,4 +1,5 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
+import { DeviceEventEmitter } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 import { MealData } from '../components/journal/MealSection';
@@ -21,10 +22,12 @@ export function useFoodLogs(dateStr: string) {
 
   const fetchLogs = useCallback(async () => {
     try {
+      console.log(`[useFoodLogs] Fetching logs from SQLite for date: "${dateStr}"`);
       const result = await db.getAllAsync<FoodEntry>(
         'SELECT * FROM food_entries WHERE date = ?',
         [dateStr]
       );
+      console.log(`[useFoodLogs] Fetched ${result.length} food entries for date: "${dateStr}"`);
       setLogs(result);
     } catch (error) {
       console.error('Error fetching food logs:', error);
@@ -33,9 +36,21 @@ export function useFoodLogs(dateStr: string) {
 
   useFocusEffect(
     useCallback(() => {
+      console.log(`[useFoodLogs] Screen focused, triggering fetchLogs for: "${dateStr}"`);
       fetchLogs();
     }, [fetchLogs])
   );
+
+  useEffect(() => {
+    const subscription = DeviceEventEmitter.addListener('food_logs_changed', () => {
+      console.log(`[useFoodLogs] Received "food_logs_changed" event. Refetching logs for: "${dateStr}"`);
+      fetchLogs();
+    });
+    return () => {
+      console.log(`[useFoodLogs] Cleaning up "food_logs_changed" listener for: "${dateStr}"`);
+      subscription.remove();
+    };
+  }, [fetchLogs]);
 
   const addFoodLog = async (entry: Omit<FoodEntry, 'id'>) => {
     const id = Math.random().toString(36).substring(2, 15);

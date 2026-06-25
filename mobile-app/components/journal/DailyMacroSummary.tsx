@@ -17,7 +17,9 @@ interface MiniBarProps {
 }
 
 function MiniBar({ label, consumed, goal, color }: MiniBarProps) {
-  const remaining = Math.max(0, goal - consumed);
+  const roundedConsumed = Math.round(consumed);
+  const roundedGoal = Math.round(goal);
+  const remaining = Math.max(0, roundedGoal - roundedConsumed);
   const pct = Math.min(consumed / goal, 1);
   const theme = useThemeColors();
 
@@ -63,7 +65,9 @@ const miniStyles = StyleSheet.create({
 });
 
 export default function DailyMacroSummary({ calories, protein, carbs, fat }: DailyMacroSummaryProps) {
-  const calRemaining = Math.max(0, calories.goal - calories.consumed);
+  const roundedConsumed = Math.round(calories.consumed);
+  const roundedGoal = Math.round(calories.goal);
+  const calRemaining = Math.max(0, roundedGoal - roundedConsumed);
   const theme = useThemeColors();
 
   return (
@@ -71,7 +75,7 @@ export default function DailyMacroSummary({ calories, protein, carbs, fat }: Dai
       {/* Calorie summary */}
       <View style={styles.calorieRow}>
         <View style={styles.calorieBlock}>
-          <Text style={[styles.calorieNumber, { color: theme.textPrimary }]}>{calories.consumed}</Text>
+          <Text style={[styles.calorieNumber, { color: theme.textPrimary }]}>{roundedConsumed}</Text>
           <Text style={[styles.calorieLabel, { color: theme.textDim }]}>eaten</Text>
         </View>
 
@@ -85,7 +89,7 @@ export default function DailyMacroSummary({ calories, protein, carbs, fat }: Dai
         <View style={[styles.calorieDivider, { backgroundColor: theme.border }]} />
 
         <View style={styles.calorieBlock}>
-          <Text style={[styles.calorieNumber, { color: theme.textPrimary }]}>{calories.goal}</Text>
+          <Text style={[styles.calorieNumber, { color: theme.textPrimary }]}>{roundedGoal}</Text>
           <Text style={[styles.calorieLabel, { color: theme.textDim }]}>goal</Text>
         </View>
       </View>

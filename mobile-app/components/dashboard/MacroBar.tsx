@@ -11,7 +11,9 @@ interface MacroBarProps {
 }
 
 export default function MacroBar({ label, consumed, goal, color, unit = 'g' }: MacroBarProps) {
-  const percentage = Math.min(consumed / goal, 1);
+  const roundedConsumed = Math.round(consumed || 0);
+  const roundedGoal = Math.round(goal || 0);
+  const percentage = roundedGoal > 0 ? Math.min(roundedConsumed / roundedGoal, 1) : 0;
   const theme = useThemeColors();
 
   return (
@@ -22,9 +24,9 @@ export default function MacroBar({ label, consumed, goal, color, unit = 'g' }: M
           <Text style={[styles.label, { color: theme.textSecondary }]}>{label}</Text>
         </View>
         <Text style={styles.values}>
-          <Text style={[styles.consumed, { color: theme.textPrimary }]}>{consumed}</Text>
+          <Text style={[styles.consumed, { color: theme.textPrimary }]}>{roundedConsumed}</Text>
           <Text style={[styles.separator, { color: theme.textDim }]}> / </Text>
-          <Text style={[styles.goal, { color: theme.textDim }]}>{goal}{unit}</Text>
+          <Text style={[styles.goal, { color: theme.textDim }]}>{roundedGoal}{unit}</Text>
         </Text>
       </View>
 
