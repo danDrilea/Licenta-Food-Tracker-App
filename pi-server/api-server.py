@@ -3,6 +3,7 @@ AI Food Tracker — Raspberry Pi API Server
 ==========================================
 FastAPI server running YOLO instance-segmentation + MiDaS monocular depth
 to detect food items and estimate their volume (cm³) and mass (grams).
+Includes Llama 3.2 3B (GGUF) for nutritional text generation.
 
 Usage (on Raspberry Pi):
     uvicorn api-server:app --host 0.0.0.0 --port 8000
@@ -20,7 +21,9 @@ from PIL import Image
 from fastapi import FastAPI, File, UploadFile, Query
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 from ultralytics import YOLO
+from llama_cpp import Llama
 
 
 # ══════════════════════════════════════════════════════════════════════
@@ -44,6 +47,9 @@ app.add_middleware(
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 WEIGHTS_PATH = os.path.join(
     BASE_DIR, "..", "computer-vision-training", "trainedModel", "best.pt"
+)
+LLAMA_MODEL_PATH = os.path.join(
+    BASE_DIR, "..", "llm", "Llama-3.2-3B-Instruct-Q4_K_M.gguf"
 )
 
 # ══════════════════════════════════════════════════════════════════════
@@ -284,6 +290,23 @@ try:
 except Exception as e:
     print(f"[WARNING] Failed to load MiDaS: {e}")
 
+# --- Llama 3.2 3B (GGUF) ---
+print(f"[INFO] Loading Llama 3.2 3B from: {LLAMA_MODEL_PATH}")
+llm_model = None
+try:
+    if os.path.exists(LLAMA_MODEL_PATH):
+        llm_model = Llama(
+            model_path=LLAMA_MODEL_PATH,
+            n_ctx=2048,       # context window
+            n_threads=4,      # match RPi core count
+            verbose=False,
+        )
+        print("[OK] Llama 3.2 3B loaded successfully.")
+    else:
+        print(f"[WARNING] Llama GGUF not found at {LLAMA_MODEL_PATH}")
+except Exception as e:
+    print(f"[WARNING] Failed to load Llama model: {e}")
+
 
 # ══════════════════════════════════════════════════════════════════════
 #  API Endpoints
@@ -295,6 +318,7 @@ async def root():
         "message": "Raspberry Pi Food Tracker API is Live!",
         "yolo_loaded": yolo_model is not None,
         "midas_loaded": midas_model is not None,
+        "llm_loaded": llm_model is not None,
     }
 
 
@@ -493,6 +517,62 @@ async def analyze_food(
                 "midas_seconds": round(t_midas_done - t_midas, 3),
                 "total_seconds": round(t_end - t_start, 3),
             },
+        })
+
+    except Exception as e:
+        return JSONResponse(
+            content={"status": "error", "message": str(e)},
+            status_code=500,
+        )
+
+
+# ══════════════════════════════════════════════════════════════════════
+#  LLM Test Endpoint
+# ══════════════════════════════════════════════════════════════════════
+
+class LLMRequest(BaseModel):
+    prompt: str
+    max_tokens: int = 256
+
+
+@app.post("/llm-test")
+async def llm_test(req: LLMRequest):
+    """Send a prompt to the on-device Llama 3.2 3B model and get a response."""
+    if llm_model is None:
+        return JSONResponse(
+            content={
+                "status": "error",
+                "message": "Llama model not loaded. Check GGUF path on the Pi.",
+            },
+            status_code=500,
+        )
+
+    try:
+        t_start = time.time()
+
+        output = llm_model.create_chat_completion(
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "You are a concise nutritional assistant. "
+                        "Give short, helpful answers about food and nutrition."
+                    ),
+                },
+                {"role": "user", "content": req.prompt},
+            ],
+            max_tokens=req.max_tokens,
+        )
+
+        t_end = time.time()
+        reply = output["choices"][0]["message"]["content"]
+
+        return JSONResponse(content={
+            "status": "success",
+            "prompt": req.prompt,
+            "response": reply,
+            "tokens_used": output["usage"],
+            "time_seconds": round(t_end - t_start, 2),
         })
 
     except Exception as e:
