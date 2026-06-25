@@ -541,30 +541,34 @@ class FoodItem(BaseModel):
 
 class MealAdviceRequest(BaseModel):
     items: list[FoodItem]
+    target_calories: float
+    target_protein: float
+    target_carbs: float
+    target_fats: float
+    meal_calories: float
     max_tokens: int = 200
 
 
 MEAL_SYSTEM_PROMPT = (
     "You are a nutritional assistant in a food tracking app. "
-    "The user logs a meal and you give an honest, objective comment.\n\n"
+    "The user logs a meal and you give an honest, objective comment based on their daily targets.\n\n"
     "Rules:\n"
     "- ONLY mention foods the user listed. Never invent foods.\n"
     "- Write 3-4 sentences TOTAL. No more.\n"
-    "- Be HONEST. If the meal is heavy, fatty, or unbalanced, say so directly but constructively.\n"
-    "- If the meal is healthy and balanced, acknowledge that.\n"
-    "- End with one practical suggestion to improve the meal.\n"
+    "- Compare the meal's macros/calories to their daily targets (e.g. 'This covers 40% of your daily fat limit').\n"
+    "- Be HONEST and objective. If the meal is heavy, fatty, or unbalanced relative to their targets, say so directly but constructively.\n"
+    "- End with one practical suggestion to improve the meal or adjust the rest of their day.\n"
     "- Never use quotation marks around your response.\n"
-    "- No calorie counts or macro numbers — the app shows those.\n"
-    "- Be direct, constructive, and brief. Under 60 words total."
+    "- Be direct, constructive, and brief. Under 80 words total."
 )
 
 
-def _build_meal_prompt(items: list[FoodItem]) -> str:
-    """Build a structured user message from the meal items."""
+def _build_meal_prompt(req: MealAdviceRequest) -> str:
+    """Build a structured user message from the meal items, calories, and goals."""
     lines = ["Here is my meal:\n"]
     total_p, total_c, total_f, total_g = 0.0, 0.0, 0.0, 0.0
 
-    for item in items:
+    for item in req.items:
         lines.append(
             f"- {item.name}: {item.grams:.0f}g "
             f"(protein {item.protein:.1f}g, carbs {item.carbs:.1f}g, fats {item.fats:.1f}g)"
@@ -575,10 +579,18 @@ def _build_meal_prompt(items: list[FoodItem]) -> str:
         total_f += item.fats
 
     lines.append(
-        f"\nTotal: {total_g:.0f}g — "
-        f"protein {total_p:.1f}g, carbs {total_c:.1f}g, fats {total_f:.1f}g"
+        f"\nTotal Meal Stats: {total_g:.0f}g — "
+        f"protein {total_p:.1f}g, carbs {total_c:.1f}g, fats {total_f:.1f}g, "
+        f"calories {req.meal_calories:.0f} kcal"
     )
-    lines.append("\nGive me a brief, friendly comment on this meal.")
+    lines.append(
+        f"\nMy Daily Targets/Goals:\n"
+        f"- Target Calories: {req.target_calories:.0f} kcal\n"
+        f"- Target Protein: {req.target_protein:.0f}g\n"
+        f"- Target Carbs: {req.target_carbs:.0f}g\n"
+        f"- Target Fats: {req.target_fats:.0f}g"
+    )
+    lines.append("\nGive me a brief, objective, and honest comment on this meal relative to my targets.")
     return "\n".join(lines)
 
 
@@ -602,7 +614,7 @@ async def meal_advice(req: MealAdviceRequest):
 
     try:
         t_start = time.time()
-        user_prompt = _build_meal_prompt(req.items)
+        user_prompt = _build_meal_prompt(req)
 
         output = llm_model.create_chat_completion(
             messages=[
@@ -625,6 +637,13 @@ async def meal_advice(req: MealAdviceRequest):
                 "total_protein_g": round(sum(i.protein for i in req.items), 1),
                 "total_carbs_g": round(sum(i.carbs for i in req.items), 1),
                 "total_fats_g": round(sum(i.fats for i in req.items), 1),
+                "meal_calories": req.meal_calories,
+            },
+            "targets": {
+                "calories": req.target_calories,
+                "protein": req.target_protein,
+                "carbs": req.target_carbs,
+                "fats": req.target_fats,
             },
             "tokens_used": output["usage"],
             "time_seconds": round(t_end - t_start, 2),
