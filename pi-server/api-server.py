@@ -526,18 +526,66 @@ async def analyze_food(
         )
 
 
+
 # ══════════════════════════════════════════════════════════════════════
-#  LLM Test Endpoint
+#  LLM Meal Advice Endpoint
 # ══════════════════════════════════════════════════════════════════════
 
-class LLMRequest(BaseModel):
-    prompt: str
-    max_tokens: int = 256
+class FoodItem(BaseModel):
+    name: str
+    grams: float
+    protein: float  # grams
+    carbs: float    # grams
+    fats: float     # grams
 
 
-@app.post("/llm-test")
-async def llm_test(req: LLMRequest):
-    """Send a prompt to the on-device Llama 3.2 3B model and get a response."""
+class MealAdviceRequest(BaseModel):
+    items: list[FoodItem]
+    max_tokens: int = 512
+
+
+MEAL_SYSTEM_PROMPT = (
+    "You are a friendly and concise nutritional assistant embedded in a food tracking app. "
+    "The user has just logged a meal. You will receive the exact list of food items with their "
+    "weight in grams and macronutrient breakdown (protein, carbs, fats).\n\n"
+    "Rules you MUST follow:\n"
+    "- ONLY reference the food items provided. Do NOT invent or assume any foods not listed.\n"
+    "- Give a brief, encouraging overview of the meal (2-3 sentences max).\n"
+    "- Provide 1-2 gentle, generic tips — e.g. 'consider adding a vegetable next time' or "
+    "'this meal is a bit high in fats, maybe swap one item for a lighter option'.\n"
+    "- Keep suggestions subtle and non-preachy. Never lecture.\n"
+    "- Do NOT provide exact calorie counts or detailed macro targets — the app already shows those.\n"
+    "- Keep the entire response under 150 words.\n"
+    "- Be warm but concise. Use plain language."
+)
+
+
+def _build_meal_prompt(items: list[FoodItem]) -> str:
+    """Build a structured user message from the meal items."""
+    lines = ["Here is my meal:\n"]
+    total_p, total_c, total_f, total_g = 0.0, 0.0, 0.0, 0.0
+
+    for item in items:
+        lines.append(
+            f"- {item.name}: {item.grams:.0f}g "
+            f"(protein {item.protein:.1f}g, carbs {item.carbs:.1f}g, fats {item.fats:.1f}g)"
+        )
+        total_g += item.grams
+        total_p += item.protein
+        total_c += item.carbs
+        total_f += item.fats
+
+    lines.append(
+        f"\nTotal: {total_g:.0f}g — "
+        f"protein {total_p:.1f}g, carbs {total_c:.1f}g, fats {total_f:.1f}g"
+    )
+    lines.append("\nGive me a brief, friendly comment on this meal.")
+    return "\n".join(lines)
+
+
+@app.post("/meal-advice")
+async def meal_advice(req: MealAdviceRequest):
+    """Analyse a logged meal and return brief nutritional advice from Llama 3.2."""
     if llm_model is None:
         return JSONResponse(
             content={
@@ -547,21 +595,24 @@ async def llm_test(req: LLMRequest):
             status_code=500,
         )
 
+    if not req.items:
+        return JSONResponse(
+            content={"status": "error", "message": "No food items provided."},
+            status_code=400,
+        )
+
     try:
         t_start = time.time()
+        user_prompt = _build_meal_prompt(req.items)
 
         output = llm_model.create_chat_completion(
             messages=[
-                {
-                    "role": "system",
-                    "content": (
-                        "You are a concise nutritional assistant. "
-                        "Give short, helpful answers about food and nutrition."
-                    ),
-                },
-                {"role": "user", "content": req.prompt},
+                {"role": "system", "content": MEAL_SYSTEM_PROMPT},
+                {"role": "user", "content": user_prompt},
             ],
             max_tokens=req.max_tokens,
+            temperature=0.7,
+            top_p=0.9,
         )
 
         t_end = time.time()
@@ -569,8 +620,13 @@ async def llm_test(req: LLMRequest):
 
         return JSONResponse(content={
             "status": "success",
-            "prompt": req.prompt,
-            "response": reply,
+            "advice": reply,
+            "meal_summary": {
+                "item_count": len(req.items),
+                "total_protein_g": round(sum(i.protein for i in req.items), 1),
+                "total_carbs_g": round(sum(i.carbs for i in req.items), 1),
+                "total_fats_g": round(sum(i.fats for i in req.items), 1),
+            },
             "tokens_used": output["usage"],
             "time_seconds": round(t_end - t_start, 2),
         })
