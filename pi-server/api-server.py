@@ -561,16 +561,17 @@ class MealAdviceRequest(BaseModel):
 
 
 MEAL_SYSTEM_PROMPT = (
-    "You are a nutritional assistant in a food tracking app. "
-    "The user logs a meal and you give an honest, objective comment based on their daily targets and day plan.\n\n"
+    "You are a friendly, natural nutritional assistant in a food tracking app. "
+    "The user has just logged a meal. You will be provided with the meal details, their daily targets, and their day progress.\n\n"
     "Rules:\n"
     "- ONLY mention foods the user listed. Never invent foods.\n"
     "- Write exactly 2-3 sentences. Keep it under 50 words total. Be extremely brief.\n"
-    "- Use the pre-calculated percentages and values provided in the prompt. Do NOT calculate or guess numbers yourself.\n"
-    "- Do NOT say the meal exceeds their daily target unless the meal calories are actually higher than their daily target. Instead, say it exceeds their 'average meal budget' or 'planned meal target'.\n"
-    "- Be honest: if the meal is heavy relative to their day plan, or takes up too much of their daily fat/carb budget, say so directly.\n"
-    "- End with a single clear, practical recommendation.\n"
-    "- Do not use quotation marks."
+    "- Speak in a warm, casual, and highly natural conversational tone. Speak to the user directly ('you').\n"
+    "- Do NOT sound robotic. Do NOT quote exact numbers or percentages (like 'exceeds your average target by 180 kcal' or 'takes up 50% of fats'). "
+    "Instead, use natural phrasing like 'this is a light meal', 'perfect choice', 'slightly heavy for breakfast', or 'a bit high in fats'.\n"
+    "- Check if this meal helps them towards their daily goal, or if it is disproportionately high/low compared to their targets.\n"
+    "- End with a single clear, practical recommendation (e.g. 'consider adding some protein later' or 'swap this for a lighter option next time').\n"
+    "- Do not use quotation marks, headers, or bullet points."
 )
 
 
@@ -589,46 +590,29 @@ def _build_meal_prompt(req: MealAdviceRequest) -> str:
         total_c += item.carbs
         total_f += item.fats
 
-    # Pre-calculate details to avoid LLM math hallucinations
+    # Pre-calculated stats to give context
     prop_cal = req.target_calories / req.planned_meals_count
-    
     total_today_cal = req.consumed_calories_before + req.meal_calories
-    pct_daily_cal = (total_today_cal / req.target_calories) * 100 if req.target_calories else 0
     remaining_cal = req.target_calories - total_today_cal
-    
-    pct_meal_f = (total_f / req.target_fats) * 100 if req.target_fats else 0
-    pct_meal_c = (total_c / req.target_carbs) * 100 if req.target_carbs else 0
-    pct_meal_p = (total_p / req.target_protein) * 100 if req.target_protein else 0
 
     lines.append(
-        f"\nMeal Stats: {total_g:.0f}g — "
-        f"protein {total_p:.1f}g, carbs {total_c:.1f}g, fats {total_f:.1f}g, "
-        f"calories {req.meal_calories:.0f} kcal"
+        f"\nMeal stats:\n"
+        f"- Total calories in this meal: {req.meal_calories:.0f} kcal\n"
+        f"- Average per-meal budget: {prop_cal:.0f} kcal\n"
+        f"- Meal macros: protein {total_p:.1f}g, carbs {total_c:.1f}g, fats {total_f:.1f}g"
     )
     lines.append(
-        f"\nAlready Consumed Today (Before this meal):\n"
-        f"- Calories: {req.consumed_calories_before:.0f} kcal\n"
-        f"- Protein: {req.consumed_protein_before:.0f}g\n"
-        f"- Carbs: {req.consumed_carbs_before:.0f}g\n"
-        f"- Fats: {req.consumed_fats_before:.0f}g"
+        f"\nDaily progress context:\n"
+        f"- Target calories today: {req.target_calories:.0f} kcal\n"
+        f"- Calories consumed before this meal: {req.consumed_calories_before:.0f} kcal\n"
+        f"- Remaining calorie budget for the day: {remaining_cal:.0f} kcal\n"
+        f"- Target protein: {req.target_protein:.0f}g (meal has {total_p:.0f}g)\n"
+        f"- Target carbs: {req.target_carbs:.0f}g (meal has {total_c:.0f}g)\n"
+        f"- Target fats: {req.target_fats:.0f}g (meal has {total_f:.0f}g)\n"
+        f"- Planned meals today: {req.planned_meals_count}\n"
+        f"- User dietary focus: {req.dietary_goal}"
     )
-    lines.append(
-        f"\nMy Daily Targets & Plan:\n"
-        f"- Target Calories: {req.target_calories:.0f} kcal\n"
-        f"- Target Protein: {req.target_protein:.0f}g\n"
-        f"- Target Carbs: {req.target_carbs:.0f}g\n"
-        f"- Target Fats: {req.target_fats:.0f}g\n"
-        f"- Planned Meals Count: {req.planned_meals_count}\n"
-        f"- Dietary Focus/Goal: {req.dietary_goal}"
-    )
-    lines.append(
-        f"\nCalculated Nutritional Facts (Use these for your response):\n"
-        f"- This single meal has {req.meal_calories:.0f} kcal, which is {req.meal_calories - prop_cal:+.0f} kcal compared to your average meal target of {prop_cal:.0f} kcal.\n"
-        f"- Together with previous meals, you have consumed {total_today_cal:.0f} kcal today ({pct_daily_cal:.0f}% of your daily target).\n"
-        f"- Remaining budget for today: {remaining_cal:.0f} kcal (if negative, you are over by {abs(remaining_cal):.0f} kcal).\n"
-        f"- This meal alone contributes {pct_meal_f:.0f}% of your daily fat target, {pct_meal_c:.0f}% of your daily carb target, and {pct_meal_p:.0f}% of your daily protein target."
-    )
-    lines.append("\nGive me a brief, objective, and honest comment on this meal relative to my targets and day plan. Do not try to recalculate or use any other numbers.")
+    lines.append("\nProvide brief, friendly, and natural feedback on this meal.")
     return "\n".join(lines)
 
 
