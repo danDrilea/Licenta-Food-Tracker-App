@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { useFocusEffect } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
+import { getLocalDateStr } from '../types/utils';
 
 export function useWeeklyStats() {
   const db = useSQLiteContext();
@@ -11,15 +12,14 @@ export function useWeeklyStats() {
   const fetchStats = useCallback(async () => {
     try {
       const now = new Date();
-      const localNow = new Date(now.getTime() - (now.getTimezoneOffset() * 60 * 1000));
-      const todayStr = localNow.toISOString().split('T')[0];
+      const todayStr = getLocalDateStr(now);
       
       // 1. Calculate Weekly Calories (last 7 days)
       const last7Days: string[] = [];
       for (let i = 6; i >= 0; i--) {
-        const d = new Date(now.getTime() - (now.getTimezoneOffset() * 60 * 1000));
+        const d = new Date(now);
         d.setDate(d.getDate() - i);
-        last7Days.push(d.toISOString().split('T')[0]);
+        last7Days.push(getLocalDateStr(d));
       }
 
       const calorieResults = await Promise.all(
@@ -37,13 +37,18 @@ export function useWeeklyStats() {
       let missesAllowed = 1;
       let isFrozenStatus = false;
       
-      // Check today first
-      const todayResult = await db.getFirstAsync<{ count: number }>(
-        'SELECT COUNT(*) as count FROM food_entries WHERE date = ?',
-        [todayStr]
+      // Fetch all dates with entries in the last year
+      const oneYearAgo = new Date(now);
+      oneYearAgo.setDate(oneYearAgo.getDate() - 365);
+      const oneYearAgoStr = getLocalDateStr(oneYearAgo);
+
+      const historyRows = await db.getAllAsync<{ date: string }>(
+        'SELECT DISTINCT date FROM food_entries WHERE date >= ? ORDER BY date DESC',
+        [oneYearAgoStr]
       );
       
-      const hasLoggedToday = todayResult && todayResult.count > 0;
+      const loggedDates = new Set(historyRows.map(r => r.date));
+      const hasLoggedToday = loggedDates.has(todayStr);
       
       // We are "Frozen" ONLY if we haven't logged today yet
       if (!hasLoggedToday) {
@@ -53,24 +58,20 @@ export function useWeeklyStats() {
 
       // Loop back up to 365 days
       for (let i = (hasLoggedToday ? 0 : 1); i < 365; i++) {
-        const checkDate = new Date(now.getTime() - (now.getTimezoneOffset() * 60 * 1000));
+        const checkDate = new Date(now);
         checkDate.setDate(checkDate.getDate() - i);
-        const dateStr = checkDate.toISOString().split('T')[0];
+        const dateStr = getLocalDateStr(checkDate);
         
-        const result = await db.getFirstAsync<{ count: number }>(
-          'SELECT COUNT(*) as count FROM food_entries WHERE date = ?',
-          [dateStr]
-        );
+        const hasLoggedOnDate = loggedDates.has(dateStr);
         
-        if (result && result.count > 0) {
+        if (hasLoggedOnDate) {
           currentStreak++;
-        } else if (missesAllowed > 0) {
-          // Used grace day for a past date
-          missesAllowed--;
-          // We don't set isFrozenStatus to true here because the user has already "saved" the streak by logging today
         } else {
-          // Streak broken
-          break;
+          if (missesAllowed > 0) {
+            missesAllowed--; // Use grace day
+          } else {
+            break; // Streak broken
+          }
         }
       }
       

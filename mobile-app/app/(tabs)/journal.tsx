@@ -7,10 +7,11 @@ import MealSection, { MealData } from '../../components/journal/MealSection';
 import WaterTracker from '../../components/dashboard/WaterTracker';
 import AddFoodModal from '../../components/journal/AddFoodModal';
 import { useSettings } from '../../contexts/SettingsContext';
-import { useFoodLogs } from '../../hooks/useFoodLogs';
+import { useFoodLogs, FoodEntry } from '../../hooks/useFoodLogs';
 import { useDailyLogs } from '../../hooks/useDailyLogs';
 import { useProfile } from '../../hooks/useProfile';
 import { useThemeColors } from '../../types/theme';
+import { getLocalDateStr, cleanServerUrl } from '../../types/utils';
 
 export default function JournalScreen() {
   const params = useLocalSearchParams();
@@ -94,7 +95,7 @@ export default function JournalScreen() {
       };
 
       const baseUrl = settings.rpiServerUrl || 'http://danalrpi.local:8000';
-      const cleanUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
+      const cleanUrl = cleanServerUrl(baseUrl);
 
       console.log('AI Advice Request Payload:', JSON.stringify(payload, null, 2));
 
@@ -155,15 +156,11 @@ export default function JournalScreen() {
   }, [params.selectedMealId, settings.meals, router]);
 
   // Format date as YYYY-MM-DD local time to avoid timezone shifts
-  const dateStr = useMemo(() => {
-    const offset = selectedDate.getTimezoneOffset();
-    const localDate = new Date(selectedDate.getTime() - (offset * 60 * 1000));
-    return localDate.toISOString().split('T')[0];
-  }, [selectedDate]);
+  const dateStr = useMemo(() => getLocalDateStr(selectedDate), [selectedDate]);
 
   const { logs, addFoodLog, updateFoodLog, deleteFoodLog } = useFoodLogs(dateStr);
   const { waterGlasses, setWaterGlasses } = useDailyLogs(dateStr);
-  const [editingFoodItem, setEditingFoodItem] = useState<any | null>(null);
+  const [editingFoodItem, setEditingFoodItem] = useState<FoodEntry | null>(null);
 
   // Group logs by meal_id
   const logsByMeal = useMemo(() => {

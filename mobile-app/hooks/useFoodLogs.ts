@@ -2,7 +2,6 @@ import { useState, useCallback, useEffect } from 'react';
 import { DeviceEventEmitter } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
-import { MealData } from '../components/journal/MealSection';
 
 export interface FoodEntry {
   id: string;

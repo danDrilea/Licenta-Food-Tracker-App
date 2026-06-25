@@ -4,12 +4,13 @@ import { useRouter, Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useWeightHistory } from '../hooks/useProfile';
 import { useThemeColors } from '../types/theme';
+import { getLocalDateStr } from '../types/utils';
 
 export default function LogWeightScreen() {
   const router = useRouter();
   const { addWeightEntry } = useWeightHistory();
   const [weight, setWeight] = useState('');
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [date, setDate] = useState(getLocalDateStr());
   const theme = useThemeColors();
 
   const handleSave = async () => {
@@ -68,7 +69,7 @@ export default function LogWeightScreen() {
 
         <View style={[styles.dateSelector, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
           <Ionicons name="calendar-outline" size={18} color={theme.textMuted} />
-          <Text style={[styles.dateText, { color: theme.textSecondary }]}>{date === new Date().toISOString().split('T')[0] ? 'Today' : date}</Text>
+          <Text style={[styles.dateText, { color: theme.textSecondary }]}>{date === getLocalDateStr() ? 'Today' : date}</Text>
         </View>
 
         <TouchableOpacity 

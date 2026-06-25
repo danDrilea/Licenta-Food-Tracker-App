@@ -6,14 +6,7 @@ import { useRouter } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 import { useSettings } from '../../contexts/SettingsContext';
 import { useThemeColors } from '../../types/theme';
-function formatFoodName(name: string): string {
-  if (!name) return '';
-  return name
-    .split(' ')
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ');
-}
-
+import { getLocalDateStr, formatFoodName, cleanServerUrl } from '../../types/utils';
 interface ScanPhotoFlowModalProps {
   visible: boolean;
   onClose: () => void;
@@ -97,7 +90,7 @@ export default function ScanPhotoFlowModal({ visible, onClose }: ScanPhotoFlowMo
       } as any);
 
       const baseUrl = settings.rpiServerUrl || 'http://danalrpi.local:8000';
-      const cleanUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
+      const cleanUrl = cleanServerUrl(baseUrl);
 
       const response = await fetch(`${cleanUrl}/analyze-food?depth_category=${heightClass}`, {
         method: 'POST',
@@ -168,10 +161,7 @@ export default function ScanPhotoFlowModal({ visible, onClose }: ScanPhotoFlowMo
     console.log('Logging items to meal:', mealId, 'Items:', JSON.stringify(detectedItems, null, 2));
     try {
       // Calculate local date string securely
-      const now = new Date();
-      const offset = now.getTimezoneOffset();
-      const localDate = new Date(now.getTime() - (offset * 60 * 1000));
-      const localDateStr = localDate.toISOString().split('T')[0];
+      const localDateStr = getLocalDateStr();
 
       // 1. Fetch nutrients for all detected items first (outside the write transaction)
       const itemsToInsert: {

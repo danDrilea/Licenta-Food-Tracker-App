@@ -7,7 +7,7 @@ export type HeightUnit = 'cm' | 'ft';
 export type EnergyUnit = 'kcal' | 'kj';
 
 export interface MealSlot {
-  id: string;   // fixed: 'meal_1' through 'meal_8'
+  id: string;   // e.g. 'breakfast', 'lunch', or 'meal_1' through 'meal_8'
   name: string;
   icon: string; // Ionicons name
   enabled: boolean;
@@ -45,10 +45,10 @@ export function getNextMealId(meals: MealSlot[]): string {
 }
 
 export const DEFAULT_MEALS: MealSlot[] = [
-  { id: 'meal_1', name: 'Breakfast', icon: 'sunny-outline', enabled: true },
-  { id: 'meal_2', name: 'Lunch', icon: 'restaurant-outline', enabled: true },
-  { id: 'meal_3', name: 'Dinner', icon: 'moon-outline', enabled: true },
-  { id: 'meal_4', name: 'Snacks', icon: 'cafe-outline', enabled: true },
+  { id: 'breakfast', name: 'Breakfast', icon: 'cafe', enabled: true },
+  { id: 'lunch', name: 'Lunch', icon: 'fast-food', enabled: true },
+  { id: 'dinner', name: 'Dinner', icon: 'restaurant', enabled: true },
+  { id: 'snacks', name: 'Snacks', icon: 'ice-cream', enabled: true },
 ];
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -58,8 +58,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
   energyUnit: 'kcal',
   meals: DEFAULT_MEALS,
   dailyGoals: {
-    calories: 2100,
-    protein: 140,
+    calories: 2000,
+    protein: 150,
     carbs: 250,
     fat: 70,
     waterGlasses: 8,

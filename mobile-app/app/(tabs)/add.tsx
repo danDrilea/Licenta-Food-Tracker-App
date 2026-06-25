@@ -1,10 +1,13 @@
 import { StyleSheet, Text, View } from 'react-native';
+import { useThemeColors } from '../../types/theme';
 
 export default function AddScreen() {
+  const theme = useThemeColors();
+
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Add Food</Text>
-      <Text style={styles.text}>Scan from photo, scan barcode, search aliment</Text>
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
+      <Text style={[styles.title, { color: theme.textPrimary }]}>Add Food</Text>
+      <Text style={[styles.text, { color: theme.textDim }]}>Scan from photo, scan barcode, search aliment</Text>
     </View>
   );
 }
@@ -12,18 +15,15 @@ export default function AddScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#25292e',
     justifyContent: 'center',
     alignItems: 'center',
   },
   title: {
-    color: '#fff',
     fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 10,
   },
   text: {
-    color: '#aaa',
     fontSize: 14,
   },
 });

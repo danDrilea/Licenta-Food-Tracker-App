@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useThemeColors } from '../../types/theme';
+import { MAX_MEALS } from '../../types/settings';
 
 export interface DashboardMealData {
   id: string;
@@ -15,8 +16,6 @@ interface MealSummaryProps {
   meals: DashboardMealData[];
   onMealPress?: (meal: DashboardMealData) => void;
 }
-
-export const MAX_MEALS = 8;
 
 // Default icons for known meal names, fallback for custom ones
 const DEFAULT_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {

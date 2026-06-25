@@ -3,6 +3,22 @@ import { useSQLiteContext } from 'expo-sqlite';
 import { AppSettings, DEFAULT_SETTINGS, MealSlot, DailyGoals, MAX_MEALS, getNextMealId } from '../types/settings';
 import type { ThemeMode, WeightUnit, HeightUnit, EnergyUnit } from '../types/settings';
 
+interface MealSlotRow {
+  id: string;
+  name: string;
+  icon: string;
+  sort_order: number;
+  enabled: number;
+}
+
+interface DailyGoalsRow {
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+  water_glasses: number;
+}
+
 interface SettingsContextType {
   settings: AppSettings;
   isLoading: boolean;
@@ -35,7 +51,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
       const basicMap = Object.fromEntries(basicRows.map(r => [r.key, r.value]));
 
       // 2. Fetch Meal Slots
-      const mealRows = await db.getAllAsync<any>('SELECT * FROM meal_slots ORDER BY sort_order ASC');
+      const mealRows = await db.getAllAsync<MealSlotRow>('SELECT * FROM meal_slots ORDER BY sort_order ASC');
       const meals: MealSlot[] = mealRows.map(r => ({
         id: r.id,
         name: r.name,
@@ -44,7 +60,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
       }));
 
       // 3. Fetch Goals
-      const goalRow = await db.getFirstAsync<any>('SELECT * FROM daily_goals WHERE id = 1');
+      const goalRow = await db.getFirstAsync<DailyGoalsRow>('SELECT * FROM daily_goals WHERE id = 1');
       const dailyGoals: DailyGoals = {
         calories: goalRow?.calories ?? 2000,
         protein: goalRow?.protein ?? 150,
@@ -75,10 +91,10 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     fetchSettings();
   }, [fetchSettings]);
 
-  const updateBasicSetting = async (key: string, value: string) => {
+  const updateBasicSetting = useCallback(async (key: string, value: string) => {
     await db.runAsync('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)', [key, value]);
     await fetchSettings();
-  };
+  }, [db, fetchSettings]);
 
   const setTheme = useCallback((theme: ThemeMode) => updateBasicSetting('theme', theme), [updateBasicSetting]);
   const toggleTheme = useCallback(() => {
@@ -122,10 +138,11 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
   }, [db, fetchSettings]);
 
   const updateMeals = useCallback(async (meals: MealSlot[]) => {
-    // Transactional update for sort order
-    for (let i = 0; i < meals.length; i++) {
-      await db.runAsync('UPDATE meal_slots SET sort_order = ?, enabled = ? WHERE id = ?', [i, meals[i].enabled ? 1 : 0, meals[i].id]);
-    }
+    await db.withTransactionAsync(async () => {
+      for (let i = 0; i < meals.length; i++) {
+        await db.runAsync('UPDATE meal_slots SET sort_order = ?, enabled = ? WHERE id = ?', [i, meals[i].enabled ? 1 : 0, meals[i].id]);
+      }
+    });
     await fetchSettings();
   }, [db, fetchSettings]);
 

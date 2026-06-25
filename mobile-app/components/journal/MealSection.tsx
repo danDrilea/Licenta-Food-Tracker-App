@@ -2,28 +2,19 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useThemeColors } from '../../types/theme';
-
-interface FoodItem {
-  id: string;
-  name: string;
-  calories: number;
-  amount: string; // e.g. "150g", "1 cup"
-  protein?: number;
-  carbs?: number;
-  fat?: number;
-}
+import { FoodEntry } from '../../hooks/useFoodLogs';
 
 export interface MealData {
   id: string;
   name: string;
   icon: keyof typeof Ionicons.glyphMap;
-  items: FoodItem[];
+  items: FoodEntry[];
 }
 
 interface MealSectionProps {
   meal: MealData;
   onAddFood?: () => void;
-  onEditFood?: (item: FoodItem) => void;
+  onEditFood?: (item: FoodEntry) => void;
   onAnalyzeMeal?: (meal: MealData) => void;
   advice?: string | null;
 }

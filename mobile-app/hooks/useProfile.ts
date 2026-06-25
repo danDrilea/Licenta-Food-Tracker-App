@@ -1,7 +1,29 @@
 import { useState, useCallback } from 'react';
 import { useFocusEffect } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
-import { UserProfile, WeightEntry } from '../types/profile';
+import { UserProfile, WeightEntry, Sex, ActivityLevel, GoalType } from '../types/profile';
+
+interface ProfileRow {
+  first_name: string;
+  last_name: string;
+  dob: string;
+  country: string;
+  sex: Sex;
+  height_cm: number;
+  activity_level: ActivityLevel;
+  goal_type: GoalType;
+  target_weight: number;
+  weekly_rate: number;
+}
+
+interface WeightRow {
+  weight: number;
+}
+
+interface WeightHistoryRow {
+  date: string;
+  weight: number;
+}
 
 export function useProfile() {
   const db = useSQLiteContext();
@@ -9,8 +31,8 @@ export function useProfile() {
 
   const fetchProfile = useCallback(async () => {
     try {
-      const row = await db.getFirstAsync<any>('SELECT * FROM profile WHERE id = 1');
-      const latestWeight = await db.getFirstAsync<any>('SELECT weight FROM weight_history ORDER BY date DESC, created_at DESC LIMIT 1');
+      const row = await db.getFirstAsync<ProfileRow>('SELECT * FROM profile WHERE id = 1');
+      const latestWeight = await db.getFirstAsync<WeightRow>('SELECT weight FROM weight_history ORDER BY date DESC, created_at DESC LIMIT 1');
       
       if (row) {
         setProfile({
@@ -90,7 +112,7 @@ export function useWeightHistory() {
 
   const fetchHistory = useCallback(async () => {
     try {
-      const rows = await db.getAllAsync<any>('SELECT * FROM weight_history ORDER BY date DESC, created_at DESC');
+      const rows = await db.getAllAsync<WeightHistoryRow>('SELECT * FROM weight_history ORDER BY date DESC, created_at DESC');
       setHistory(rows.map(r => ({ date: r.date, weight: r.weight })));
     } catch (error) {
       console.error('Error fetching weight history:', error);

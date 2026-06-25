@@ -12,6 +12,7 @@ import { useDailyLogs } from '../../hooks/useDailyLogs';
 import { useWeeklyStats } from '../../hooks/useWeeklyStats';
 import { useRouter } from 'expo-router';
 import { useThemeColors } from '../../types/theme';
+import { getLocalDateStr } from '../../types/utils';
 import type { DashboardMealData } from '../../components/dashboard/MealSummary';
 
 function getGreeting(): string {
@@ -35,12 +36,7 @@ export default function DashboardScreen() {
   const colors = useThemeColors();
   
   // Format today's date local time
-  const todayStr = useMemo(() => {
-    const d = new Date();
-    const offset = d.getTimezoneOffset();
-    const localDate = new Date(d.getTime() - (offset * 60 * 1000));
-    return localDate.toISOString().split('T')[0];
-  }, []);
+  const todayStr = useMemo(() => getLocalDateStr(), []);
 
   const { logs } = useFoodLogs(todayStr);
   const { waterGlasses, setWaterGlasses } = useDailyLogs(todayStr);

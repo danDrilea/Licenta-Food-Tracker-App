@@ -15,7 +15,7 @@ interface FoodData {
 interface AddFoodModalProps {
   visible: boolean;
   mealName: string;
-  initialData?: FoodData & { id?: string };
+  initialData?: (FoodData & { id?: string }) | null;
   onClose: () => void;
   onSave: (food: FoodData) => void;
   onDelete?: (id: string) => void;
