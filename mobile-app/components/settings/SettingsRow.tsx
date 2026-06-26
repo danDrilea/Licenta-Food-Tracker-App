@@ -1,5 +1,6 @@
 import { View, Text, StyleSheet, Pressable, Switch, TextInput } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import * as Haptics from 'expo-haptics';
 import { useThemeColors } from '../../types/theme';
 
 // ─── Reusable Row Components ────────────────────────────────────────
@@ -38,7 +39,12 @@ export function SettingsRow({ icon, iconColor = '#8b5cf6', label, value, onPress
         !isLast && [styles.rowBorder, { borderBottomColor: theme.border }],
         pressed && onPress && { backgroundColor: theme.rowPressed },
       ]}
-      onPress={onPress}
+      onPress={() => {
+        if (onPress) {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          onPress();
+        }
+      }}
       disabled={!onPress && !right}
     >
       <View style={styles.rowLeft}>

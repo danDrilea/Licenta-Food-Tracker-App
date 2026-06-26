@@ -2,6 +2,7 @@ import React, { useMemo, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
 import Svg, { Rect, Line, Circle as SvgCircle, Text as SvgText } from 'react-native-svg';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import * as Haptics from 'expo-haptics';
 import { WeightEntry } from '../../types/profile';
 import { useThemeColors } from '../../types/theme';
 
@@ -46,7 +47,10 @@ export default function WeightHistoryChart({ entries, onLogWeight }: WeightHisto
         <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>Weight History</Text>
         <Pressable
           style={({ pressed }) => [styles.logBtn, pressed && styles.logBtnPressed]}
-          onPress={onLogWeight}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+            onLogWeight?.();
+          }}
         >
           <Ionicons name="add-circle" size={18} color="#8b5cf6" />
           <Text style={styles.logBtnText}>Log Weight</Text>

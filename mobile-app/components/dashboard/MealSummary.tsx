@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import * as Haptics from 'expo-haptics';
 import { useThemeColors } from '../../types/theme';
 import { MAX_MEALS } from '../../types/settings';
 
@@ -65,6 +66,7 @@ export default function MealSummary({ meals, onMealPress }: MealSummaryProps) {
                 pressed && { backgroundColor: theme.rowPressed, opacity: 1, transform: [{ scale: 0.97 }] },
               ]}
               onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                 console.log(`Meal pressed: ${meal.name} (id: ${meal.id})`);
                 onMealPress?.(meal);
               }}

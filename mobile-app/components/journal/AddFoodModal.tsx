@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, View, Text, Modal, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import { useThemeColors } from '../../types/theme';
 
 interface FoodData {
@@ -52,6 +53,7 @@ export default function AddFoodModal({ visible, mealName, initialData, onClose, 
 
   const handleSave = () => {
     if (!name.trim() || !calories.trim()) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
     onSave({
       name: name.trim(),
@@ -67,6 +69,7 @@ export default function AddFoodModal({ visible, mealName, initialData, onClose, 
 
   const handleDelete = () => {
     if (!initialData?.id) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     
     Alert.alert(
       'Delete Item',
@@ -96,7 +99,7 @@ export default function AddFoodModal({ visible, mealName, initialData, onClose, 
         <View style={[styles.modalContent, { backgroundColor: theme.cardBg }]}>
           <View style={styles.header}>
             <Text style={[styles.title, { color: theme.textPrimary }]}>{isEditing ? 'Edit' : 'Add to'} {mealName}</Text>
-            <TouchableOpacity onPress={onClose} hitSlop={10}>
+            <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onClose(); }} hitSlop={10}>
               <Ionicons name="close" size={24} color={theme.textMuted} />
             </TouchableOpacity>
           </View>

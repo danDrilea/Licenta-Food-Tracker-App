@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TextInput, Pressable } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import * as Haptics from 'expo-haptics';
 import { DailyGoals } from '../../types/settings';
 import { useThemeColors } from '../../types/theme';
 
@@ -57,7 +58,7 @@ function GoalField({ label, value, unit, color, onChange, max, isLast }: GoalFie
           <Text style={[styles.fieldUnit, { color: theme.textDim }]}>{unit}</Text>
         </View>
       ) : (
-        <Pressable onPress={() => { setEditing(true); setText(value.toString()); }} style={styles.valueWrap}>
+        <Pressable onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setEditing(true); setText(value.toString()); }} style={styles.valueWrap}>
           <Text style={[styles.fieldValue, { color: theme.textPrimary }]}>{value}</Text>
           <Text style={[styles.fieldUnit, { color: theme.textDim }]}>{unit}</Text>
           <Ionicons name="pencil-outline" size={14} color={theme.textDimmer} />

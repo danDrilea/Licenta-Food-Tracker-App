@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import * as Haptics from 'expo-haptics';
 import { UserGoal, GOAL_LABELS } from '../../types/profile';
 import { useThemeColors } from '../../types/theme';
 
@@ -41,7 +42,7 @@ export default function GoalSection({ goal, currentWeight, onEditPress }: GoalSe
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>Goal</Text>
-        <Pressable onPress={onEditPress} hitSlop={10}>
+        <Pressable onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onEditPress?.(); }} hitSlop={10}>
           <Ionicons name="create-outline" size={20} color="#8b5cf6" />
         </Pressable>
       </View>

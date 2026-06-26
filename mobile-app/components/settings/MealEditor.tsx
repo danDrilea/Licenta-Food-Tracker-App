@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, Pressable, TextInput, Alert } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import * as Haptics from 'expo-haptics';
 import NestableDraggableFlatList, { ScaleDecorator, RenderItemParams } from 'react-native-draggable-flatlist';
 import { MealSlot, MAX_MEALS } from '../../types/settings';
 import { useThemeColors } from '../../types/theme';
@@ -91,7 +92,7 @@ export default function MealEditor({
                 onSubmitEditing={saveEdit}
                 onBlur={saveEdit}
               />
-              <Pressable onPress={saveEdit} hitSlop={8}>
+              <Pressable onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); saveEdit(); }} hitSlop={8}>
                 <Ionicons name="checkmark-circle" size={22} color="#4ade80" />
               </Pressable>
             </View>
@@ -99,10 +100,10 @@ export default function MealEditor({
             <View style={styles.displayRow}>
               <Text style={[styles.mealName, { color: theme.textSecondary }]}>{meal.name}</Text>
               <View style={styles.actions}>
-                <Pressable onPress={() => startEdit(meal)} hitSlop={8} style={styles.actionBtn}>
+                <Pressable onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); startEdit(meal); }} hitSlop={8} style={styles.actionBtn}>
                   <Ionicons name="pencil-outline" size={16} color={theme.textDim} />
                 </Pressable>
-                <Pressable onPress={() => confirmRemove(meal)} hitSlop={8} style={styles.actionBtn}>
+                <Pressable onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy); confirmRemove(meal); }} hitSlop={8} style={styles.actionBtn}>
                   <Ionicons name="trash-outline" size={16} color="#ef4444" />
                 </Pressable>
               </View>
@@ -141,17 +142,17 @@ export default function MealEditor({
               maxLength={20}
               onSubmitEditing={handleAdd}
             />
-            <Pressable onPress={handleAdd} hitSlop={8}>
+            <Pressable onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); handleAdd(); }} hitSlop={8}>
               <Ionicons name="checkmark-circle" size={22} color="#4ade80" />
             </Pressable>
-            <Pressable onPress={() => { setIsAdding(false); setNewName(''); }} hitSlop={8}>
+            <Pressable onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setIsAdding(false); setNewName(''); }} hitSlop={8}>
               <Ionicons name="close-circle" size={22} color={theme.textDim} />
             </Pressable>
           </View>
         ) : canAdd ? (
           <Pressable
             style={({ pressed }) => [styles.addButton, { borderTopColor: theme.border }, pressed && styles.addButtonPressed]}
-            onPress={() => setIsAdding(true)}
+            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); setIsAdding(true); }}
           >
             <Ionicons name="add-circle-outline" size={20} color="#8b5cf6" />
             <Text style={styles.addButtonText}>Add meal</Text>

@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, Pressable, Image } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import * as Haptics from 'expo-haptics';
 import { useThemeColors } from '../../types/theme';
 
 interface ProfileHeaderProps {
@@ -25,7 +26,7 @@ export default function ProfileHeader({ firstName, lastName, avatarUri, onEditPr
             <Text style={styles.initials}>{initials}</Text>
           )}
         </View>
-        <Pressable style={[styles.cameraBtn, { backgroundColor: theme.border, borderColor: theme.background }]} onPress={onEditPress}>
+        <Pressable style={[styles.cameraBtn, { backgroundColor: theme.border, borderColor: theme.background }]} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onEditPress?.(); }}>
           <Ionicons name="camera" size={14} color={theme.textPrimary} />
         </Pressable>
       </View>

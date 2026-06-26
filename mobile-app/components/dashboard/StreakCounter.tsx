@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, Pressable, Alert } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import * as Haptics from 'expo-haptics';
 import { useThemeColors } from '../../types/theme';
 
 interface StreakCounterProps {
@@ -23,6 +24,7 @@ export default function StreakCounter({ days, isFrozen = false }: StreakCounterP
   const theme = useThemeColors();
 
   const showInfo = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     Alert.alert(
       'How Streaks Work',
       '🔥 Active Streak: Log your food every day to increase your streak.\n\n❄️ Frozen (Grace Day): If you miss a day, your streak is "frozen" instead of breaking. You have one day to log and save your progress!',

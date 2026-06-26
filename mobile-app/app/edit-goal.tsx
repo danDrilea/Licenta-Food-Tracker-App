@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { StyleSheet, View, Text, TextInput, TouchableOpacity, ScrollView, Pressable } from 'react-native';
 import { useRouter, Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import { useProfile } from '../hooks/useProfile';
 import { GOAL_LABELS, UserGoal, GoalType } from '../types/profile';
 import { useThemeColors } from '../types/theme';
@@ -33,6 +34,7 @@ export default function EditGoalScreen() {
   }, [profile]);
 
   const handleSave = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     const goal: UserGoal = {
       type,
       targetWeight: type !== 'maintain' ? parseFloat(targetWeight) || 70 : undefined,
@@ -50,7 +52,7 @@ export default function EditGoalScreen() {
         headerStyle: { backgroundColor: theme.cardBg },
         headerTintColor: theme.textPrimary,
         headerLeft: () => (
-          <TouchableOpacity onPress={() => router.back()}>
+          <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.back(); }}>
             <Ionicons name="close" size={24} color={theme.textPrimary} />
           </TouchableOpacity>
         ),
@@ -67,7 +69,10 @@ export default function EditGoalScreen() {
                 { backgroundColor: theme.cardBg, borderColor: theme.border },
                 type === opt.type && { borderColor: opt.color, backgroundColor: `${opt.color}10` }
               ]}
-              onPress={() => setType(opt.type)}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setType(opt.type);
+              }}
             >
               <View style={[styles.iconCircle, { backgroundColor: `${opt.color}20` }]}>
                 <Ionicons name={opt.icon} size={24} color={opt.color} />
@@ -109,7 +114,10 @@ export default function EditGoalScreen() {
                 <Pressable 
                   key={rate} 
                   style={[styles.segment, weeklyRate === rate && styles.segmentActive]}
-                  onPress={() => setWeeklyRate(rate)}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    setWeeklyRate(rate);
+                  }}
                 >
                   <Text style={[styles.segmentText, { color: theme.textMuted }, weeklyRate === rate && styles.segmentTextActive]}>
                     {rate}

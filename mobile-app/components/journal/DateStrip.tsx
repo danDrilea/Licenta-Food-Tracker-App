@@ -1,6 +1,7 @@
 import React, { useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, Pressable, FlatList } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import * as Haptics from 'expo-haptics';
 import { useThemeColors } from '../../types/theme';
 
 interface DateStripProps {
@@ -54,18 +55,21 @@ export default function DateStrip({ selectedDate, onDateChange }: DateStripProps
   }, [selectedDate]);
 
   const goToPrevDay = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const prev = new Date(selectedDate);
     prev.setDate(prev.getDate() - 1);
     onDateChange(prev);
   };
 
   const goToNextDay = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const next = new Date(selectedDate);
     next.setDate(next.getDate() + 1);
     onDateChange(next);
   };
 
   const goToToday = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     onDateChange(new Date());
   };
 
@@ -117,7 +121,10 @@ export default function DateStrip({ selectedDate, onDateChange }: DateStripProps
 
           return (
             <Pressable
-              onPress={() => onDateChange(item)}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                onDateChange(item);
+              }}
               style={[
                 styles.dayItem,
                 selected && styles.dayItemSelected,

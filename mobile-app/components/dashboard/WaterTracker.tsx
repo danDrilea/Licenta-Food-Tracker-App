@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import * as Haptics from 'expo-haptics';
 import { useThemeColors } from '../../types/theme';
 
 interface WaterTrackerProps {
@@ -19,6 +20,7 @@ export default function WaterTracker({ glasses, goal = 8, onGlassesChange }: Wat
   const theme = useThemeColors();
   
   const handleTap = (index: number) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     // If tapping the last filled glass, unfill it (toggle behavior)
     if (index + 1 === glasses) {
       onGlassesChange(index);

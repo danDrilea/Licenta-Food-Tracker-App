@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import * as Haptics from 'expo-haptics';
 import { useThemeColors } from '../../types/theme';
 import { FoodEntry } from '../../hooks/useFoodLogs';
 
@@ -59,7 +60,10 @@ export default function MealSection({ meal, onAddFood, onEditFood, onAnalyzeMeal
                 index < meal.items.length - 1 && [styles.foodItemBorder, { borderBottomColor: theme.border }],
                 pressed && styles.foodItemPressed,
               ]}
-              onPress={() => onEditFood?.(item)}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                onEditFood?.(item);
+              }}
             >
               <View style={styles.foodInfo}>
                 <Text style={[styles.foodName, { color: theme.textSecondary }]}>{item.name}</Text>
@@ -88,7 +92,10 @@ export default function MealSection({ meal, onAddFood, onEditFood, onAnalyzeMeal
             styles.actionButton,
             pressed && styles.actionButtonPressed,
           ]}
-          onPress={onAddFood}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+            onAddFood?.();
+          }}
         >
           <Ionicons name="add-circle-outline" size={18} color="#8b5cf6" />
           <Text style={[styles.actionButtonText, { color: '#8b5cf6' }]}>Add food</Text>
@@ -102,7 +109,10 @@ export default function MealSection({ meal, onAddFood, onEditFood, onAnalyzeMeal
                 styles.actionButton,
                 pressed && styles.actionButtonPressed,
               ]}
-              onPress={() => onAnalyzeMeal(meal)}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                onAnalyzeMeal(meal);
+              }}
             >
               <Ionicons name="sparkles-outline" size={18} color="#c77ffb" />
               <Text style={[styles.actionButtonText, { color: '#c77ffb' }]}>AI Advice</Text>
@@ -115,7 +125,10 @@ export default function MealSection({ meal, onAddFood, onEditFood, onAnalyzeMeal
       {advice && (
         <View style={[styles.adviceContainer, { backgroundColor: 'rgba(199, 127, 251, 0.06)', borderTopColor: theme.border }]}>
           <Pressable
-            onPress={() => setIsAdviceCollapsed(!isAdviceCollapsed)}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              setIsAdviceCollapsed(!isAdviceCollapsed);
+            }}
             style={({ pressed }) => [
               styles.adviceHeader,
               isAdviceCollapsed && { marginBottom: 0 },

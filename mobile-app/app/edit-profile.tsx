@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { StyleSheet, View, Text, TextInput, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform, Pressable, Modal, FlatList, NativeSyntheticEvent, NativeScrollEvent } from 'react-native';
 import { useRouter, Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import { useProfile } from '../hooks/useProfile';
 import { ACTIVITY_LABELS, ActivityLevel, Sex } from '../types/profile';
 import { useThemeColors } from '../types/theme';
@@ -140,6 +141,7 @@ export default function EditProfileScreen() {
 
   const handleSave = async () => {
     if (!firstName.trim() || !lastName.trim()) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     await updateProfile({
       firstName, lastName, dateOfBirth: dob, country, sex,
       heightCm: parseFloat(heightCm) || 175, activityLevel
@@ -163,7 +165,7 @@ export default function EditProfileScreen() {
         headerStyle: { backgroundColor: theme.cardBg },
         headerTintColor: theme.textPrimary,
         headerLeft: () => (
-          <TouchableOpacity onPress={() => router.back()}>
+          <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.back(); }}>
             <Ionicons name="close" size={24} color={theme.textPrimary} />
           </TouchableOpacity>
         ),
@@ -191,7 +193,7 @@ export default function EditProfileScreen() {
         <View style={styles.section}>
           <Text style={[styles.sectionLabel, { color: theme.textMuted }]}>PERSONAL INFO</Text>
           <View style={[styles.inputCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
-            <Pressable style={styles.fieldRow} onPress={() => setShowDatePicker(true)}>
+            <Pressable style={styles.fieldRow} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowDatePicker(true); }}>
               <Text style={[styles.fieldLabel, { color: theme.textDim }]}>Date of Birth</Text>
               <View style={styles.fieldValueRow}>
                 <Text style={[styles.fieldValue, { color: theme.textPrimary }, !dob && { color: theme.textDimmer }]}>{dob || 'Select Date'}</Text>
@@ -199,7 +201,7 @@ export default function EditProfileScreen() {
               </View>
             </Pressable>
             <View style={[styles.fieldDivider, { backgroundColor: theme.border }]} />
-            <Pressable style={styles.fieldRow} onPress={() => setShowCountryPicker(true)}>
+            <Pressable style={styles.fieldRow} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowCountryPicker(true); }}>
               <Text style={[styles.fieldLabel, { color: theme.textDim }]}>Country</Text>
               <View style={styles.fieldValueRow}>
                 <Text style={[styles.fieldValue, { color: theme.textPrimary }, !country && { color: theme.textDimmer }]} numberOfLines={1}>
@@ -215,11 +217,11 @@ export default function EditProfileScreen() {
         <View style={styles.section}>
           <Text style={[styles.sectionLabel, { color: theme.textMuted }]}>SEX</Text>
           <View style={[styles.segmentedControl, { backgroundColor: theme.cardBg }]}>
-            <Pressable style={[styles.segment, sex === 'male' && styles.segmentActive]} onPress={() => setSex('male')}>
+            <Pressable style={[styles.segment, sex === 'male' && styles.segmentActive]} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setSex('male'); }}>
               <Ionicons name="male" size={18} color={sex === 'male' ? '#ffffff' : theme.textMuted} />
               <Text style={[styles.segmentText, { color: theme.textMuted }, sex === 'male' && styles.segmentTextActive]}>Male</Text>
             </Pressable>
-            <Pressable style={[styles.segment, sex === 'female' && styles.segmentActive]} onPress={() => setSex('female')}>
+            <Pressable style={[styles.segment, sex === 'female' && styles.segmentActive]} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setSex('female'); }}>
               <Ionicons name="female" size={18} color={sex === 'female' ? '#ffffff' : theme.textMuted} />
               <Text style={[styles.segmentText, { color: theme.textMuted }, sex === 'female' && styles.segmentTextActive]}>Female</Text>
             </Pressable>
@@ -241,7 +243,7 @@ export default function EditProfileScreen() {
         {/* Activity Level */}
         <View style={styles.section}>
           <Text style={[styles.sectionLabel, { color: theme.textMuted }]}>ACTIVITY LEVEL</Text>
-          <Pressable style={[styles.inputCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]} onPress={() => setShowActivityPicker(true)}>
+          <Pressable style={[styles.inputCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowActivityPicker(true); }}>
             <View style={styles.fieldRow}>
               <Text style={[styles.fieldLabel, { color: theme.textDim }]}>Daily Activity</Text>
               <View style={styles.fieldValueRow}>
@@ -269,7 +271,7 @@ export default function EditProfileScreen() {
           <View style={[styles.modalContent, { backgroundColor: theme.cardBg }]}>
             <View style={styles.modalHeader}>
               <Text style={[styles.modalTitle, { color: theme.textPrimary }]}>Select Country</Text>
-              <Pressable onPress={() => setShowCountryPicker(false)}>
+              <Pressable onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowCountryPicker(false); }}>
                 <Ionicons name="close" size={24} color={theme.textPrimary} />
               </Pressable>
             </View>
@@ -285,7 +287,7 @@ export default function EditProfileScreen() {
               renderItem={({ item }) => (
                 <Pressable 
                   style={[styles.modalItem, country === item && styles.modalItemActive]}
-                  onPress={() => { setCountry(item); setShowCountryPicker(false); setCountrySearch(''); }}
+                  onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setCountry(item); setShowCountryPicker(false); setCountrySearch(''); }}
                 >
                   <Text style={[styles.modalItemText, { color: theme.textMuted }, country === item && styles.modalItemTextActive]}>{item}</Text>
                   {country === item && <Ionicons name="checkmark" size={20} color="#8b5cf6" />}
@@ -303,7 +305,7 @@ export default function EditProfileScreen() {
           <View style={[styles.modalContent, { backgroundColor: theme.cardBg }]}>
             <View style={styles.modalHeader}>
               <Text style={[styles.modalTitle, { color: theme.textPrimary }]}>Activity Level</Text>
-              <Pressable onPress={() => setShowActivityPicker(false)}>
+              <Pressable onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowActivityPicker(false); }}>
                 <Ionicons name="close" size={24} color={theme.textPrimary} />
               </Pressable>
             </View>
@@ -312,7 +314,7 @@ export default function EditProfileScreen() {
                 <Pressable 
                   key={level} 
                   style={[styles.modalItem, activityLevel === level && styles.modalItemActive]}
-                  onPress={() => { setActivityLevel(level); setShowActivityPicker(false); }}
+                  onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setActivityLevel(level); setShowActivityPicker(false); }}
                 >
                   <Text style={[styles.modalItemText, { color: theme.textMuted }, activityLevel === level && styles.modalItemTextActive]}>
                     {ACTIVITY_LABELS[level]}
@@ -331,7 +333,7 @@ export default function EditProfileScreen() {
           <View style={[styles.modalContent, { backgroundColor: theme.cardBg, height: 420 }]}>
             <View style={styles.modalHeader}>
               <Text style={[styles.modalTitle, { color: theme.textPrimary }]}>Birth Date</Text>
-              <TouchableOpacity onPress={() => setShowDatePicker(false)}>
+              <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowDatePicker(false); }}>
                 <Text style={[styles.cancelText, { color: theme.textMuted }]}>Cancel</Text>
               </TouchableOpacity>
             </View>
@@ -341,7 +343,7 @@ export default function EditProfileScreen() {
               <WheelPicker data={years} selectedValue={tempYear} onValueChange={setTempYear} label="Year" />
             </View>
             <View style={{ padding: 24, paddingBottom: 40 }}>
-              <TouchableOpacity onPress={confirmDate} style={styles.bottomSaveBtn}>
+              <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); confirmDate(); }} style={styles.bottomSaveBtn}>
                 <Text style={styles.bottomSaveBtnText}>Confirm Date</Text>
               </TouchableOpacity>
             </View>

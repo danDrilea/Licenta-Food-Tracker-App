@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import * as Haptics from 'expo-haptics';
 import { UserProfile, ACTIVITY_LABELS, calculateAge } from '../../types/profile';
 import { useThemeColors } from '../../types/theme';
 
@@ -36,7 +37,7 @@ export default function UserInfoSection({ user, onEditPress }: UserInfoSectionPr
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>Personal Info</Text>
-        <Pressable onPress={onEditPress} hitSlop={10}>
+        <Pressable onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onEditPress?.(); }} hitSlop={10}>
           <Ionicons name="create-outline" size={20} color="#8b5cf6" />
         </Pressable>
       </View>

@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import * as Haptics from 'expo-haptics';
 import { UNIT_LABELS } from '../../types/settings';
 import type { WeightUnit, HeightUnit, EnergyUnit } from '../../types/settings';
 import { useThemeColors } from '../../types/theme';
@@ -17,7 +18,10 @@ function UnitOption<T extends string>({ label, value, selected, onSelect }: Unit
   return (
     <Pressable
       style={[styles.option, { backgroundColor: theme.border }, selected && styles.optionSelected]}
-      onPress={() => onSelect(value)}
+      onPress={() => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        onSelect(value);
+      }}
     >
       <Text style={[styles.optionText, { color: theme.textMuted }, selected && { color: theme.textSecondary, fontWeight: '600' }]}>{label}</Text>
       {selected && <Ionicons name="checkmark-circle" size={18} color="#8b5cf6" />}

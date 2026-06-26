@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { StyleSheet, View, Text, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView, TouchableWithoutFeedback, Keyboard } from 'react-native';
 import { useRouter, Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import { useWeightHistory } from '../hooks/useProfile';
 import { useThemeColors } from '../types/theme';
 import { getLocalDateStr } from '../types/utils';
@@ -16,6 +17,7 @@ export default function LogWeightScreen() {
   const handleSave = async () => {
     const weightNum = parseFloat(weight);
     if (isNaN(weightNum) || weightNum <= 0) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
     await addWeightEntry(date, weightNum);
     router.back();
@@ -30,7 +32,7 @@ export default function LogWeightScreen() {
       <Stack.Screen options={{ 
         title: 'Log Weight',
         headerLeft: () => (
-          <TouchableOpacity onPress={() => router.back()}>
+          <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.back(); }}>
             <Ionicons name="close" size={24} color={theme.textPrimary} />
           </TouchableOpacity>
         ),

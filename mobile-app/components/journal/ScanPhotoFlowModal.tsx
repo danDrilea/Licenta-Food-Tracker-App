@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { StyleSheet, View, Text, Modal, Pressable, ActivityIndicator, Alert, ScrollView, DeviceEventEmitter } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 import { useSettings } from '../../contexts/SettingsContext';
@@ -40,6 +41,7 @@ export default function ScanPhotoFlowModal({ visible, onClose }: ScanPhotoFlowMo
 
   // Phase 1: Source Selection handlers
   const handlePickImage = async (useCamera: boolean) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     try {
       let result;
       if (useCamera) {
@@ -77,6 +79,7 @@ export default function ScanPhotoFlowModal({ visible, onClose }: ScanPhotoFlowMo
   // Phase 2: Height Selection & Server Upload
   const handleSelectHeightClass = async (heightClass: 'A' | 'B' | 'C') => {
     if (!selectedImage) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
     setStep('PROCESSING');
 
@@ -158,6 +161,7 @@ export default function ScanPhotoFlowModal({ visible, onClose }: ScanPhotoFlowMo
 
   // Phase 3: Logging to Database
   const handleSelectMeal = async (mealId: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     console.log('Logging items to meal:', mealId, 'Items:', JSON.stringify(detectedItems, null, 2));
     try {
       // Calculate local date string securely
@@ -256,7 +260,7 @@ export default function ScanPhotoFlowModal({ visible, onClose }: ScanPhotoFlowMo
           <View style={[styles.header, { borderBottomColor: theme.border }]}>
             <Text style={[styles.title, { color: theme.textPrimary }]}>AI Photo Scanner</Text>
             {step !== 'PROCESSING' && (
-              <Pressable onPress={onClose} style={styles.closeBtn}>
+              <Pressable onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onClose(); }} style={styles.closeBtn}>
                 <Ionicons name="close" size={24} color={theme.textDim} />
               </Pressable>
             )}
@@ -372,7 +376,7 @@ export default function ScanPhotoFlowModal({ visible, onClose }: ScanPhotoFlowMo
                     { borderColor: theme.border },
                     pressed && { backgroundColor: theme.rowPressed }
                   ]}
-                  onPress={() => setStep('PICK_SOURCE')}
+                  onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setStep('PICK_SOURCE'); }}
                 >
                   <Ionicons name="arrow-back" size={16} color={theme.textPrimary} />
                   <Text style={[styles.backBtnText, { color: theme.textPrimary }]}>Back</Text>

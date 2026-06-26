@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, Pressable, Modal } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import * as Haptics from 'expo-haptics';
 import {
   calculateBMI,
   calculateBMR,
@@ -35,7 +36,7 @@ function IndexCard({ label, value, subtitle, color, description, formula }: Inde
       <View style={[styles.indexCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
         <View style={styles.indexHeader}>
           <Text style={[styles.indexLabel, { color: theme.textMuted }]}>{label}</Text>
-          <Pressable onPress={() => setShowInfo(true)} hitSlop={10}>
+          <Pressable onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowInfo(true); }} hitSlop={10}>
             <Ionicons name="information-circle-outline" size={20} color={theme.textDim} />
           </Pressable>
         </View>
@@ -54,11 +55,11 @@ function IndexCard({ label, value, subtitle, color, description, formula }: Inde
 
       {/* Info Modal */}
       <Modal visible={showInfo} transparent animationType="fade" onRequestClose={() => setShowInfo(false)}>
-        <Pressable style={[styles.modalOverlay, { backgroundColor: theme.overlay }]} onPress={() => setShowInfo(false)}>
+        <Pressable style={[styles.modalOverlay, { backgroundColor: theme.overlay }]} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowInfo(false); }}>
           <View style={[styles.modalContent, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
             <View style={styles.modalHeader}>
               <Text style={[styles.modalTitle, { color: theme.textPrimary }]}>{label}</Text>
-              <Pressable onPress={() => setShowInfo(false)} hitSlop={10}>
+              <Pressable onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowInfo(false); }} hitSlop={10}>
                 <Ionicons name="close" size={22} color={theme.textMuted} />
               </Pressable>
             </View>
