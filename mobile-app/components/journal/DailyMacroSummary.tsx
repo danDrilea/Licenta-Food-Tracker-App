@@ -19,19 +19,21 @@ interface MiniBarProps {
 function MiniBar({ label, consumed, goal, color }: MiniBarProps) {
   const roundedConsumed = Math.round(consumed);
   const roundedGoal = Math.round(goal);
-  const remaining = Math.max(0, roundedGoal - roundedConsumed);
+  const diff = Math.abs(roundedGoal - roundedConsumed);
+  const isOver = roundedConsumed > roundedGoal;
+  const overColor = diff <= 20 ? '#eab308' : '#ef4444';
   const pct = Math.min(consumed / goal, 1);
   const theme = useThemeColors();
 
   return (
     <View style={miniStyles.container}>
       <View style={[miniStyles.track, { backgroundColor: theme.border }]}>
-        <View style={[miniStyles.fill, { width: `${pct * 100}%`, backgroundColor: color }]} />
+        <View style={[miniStyles.fill, { width: `${pct * 100}%`, backgroundColor: isOver ? '#ef4444' : color }]} />
       </View>
       <Text style={[miniStyles.label, { color: theme.textMuted }]}>{label}</Text>
       <Text style={miniStyles.value}>
-        <Text style={{ color: theme.textPrimary, fontWeight: '700' }}>{remaining}</Text>
-        <Text style={{ color: theme.textDim }}>g left</Text>
+        <Text style={{ color: isOver ? overColor : theme.textPrimary, fontWeight: '700' }}>{diff}</Text>
+        <Text style={{ color: isOver ? overColor : theme.textDim }}>{isOver ? 'g over' : 'g left'}</Text>
       </Text>
     </View>
   );
@@ -67,7 +69,10 @@ const miniStyles = StyleSheet.create({
 export default function DailyMacroSummary({ calories, protein, carbs, fat }: DailyMacroSummaryProps) {
   const roundedConsumed = Math.round(calories.consumed);
   const roundedGoal = Math.round(calories.goal);
-  const calRemaining = Math.max(0, roundedGoal - roundedConsumed);
+  const diff = Math.abs(roundedGoal - roundedConsumed);
+  const isOver = roundedConsumed > roundedGoal;
+  // For calories, 20g equivalent is roughly 100 kcal, so we use 100 as the threshold for calories.
+  const overColor = diff <= 100 ? '#eab308' : '#ef4444';
   const theme = useThemeColors();
 
   return (
@@ -82,8 +87,8 @@ export default function DailyMacroSummary({ calories, protein, carbs, fat }: Dai
         <View style={[styles.calorieDivider, { backgroundColor: theme.border }]} />
 
         <View style={styles.calorieBlock}>
-          <Text style={[styles.calorieNumber, styles.calorieRemaining]}>{calRemaining}</Text>
-          <Text style={[styles.calorieLabel, { color: theme.textDim }]}>remaining</Text>
+          <Text style={[styles.calorieNumber, isOver ? { color: overColor } : styles.calorieRemaining]}>{diff}</Text>
+          <Text style={[styles.calorieLabel, { color: isOver ? overColor : theme.textDim }]}>{isOver ? 'over' : 'remaining'}</Text>
         </View>
 
         <View style={[styles.calorieDivider, { backgroundColor: theme.border }]} />
