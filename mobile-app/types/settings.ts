@@ -31,6 +31,7 @@ export interface AppSettings {
   notificationsEnabled: boolean;
   mealReminders: boolean;
   rpiServerUrl: string;
+  biometricLock: boolean;
 }
 
 export const MAX_MEALS = 8;
@@ -67,6 +68,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   notificationsEnabled: false,
   mealReminders: false,
   rpiServerUrl: 'http://danalrpi.local:8000',
+  biometricLock: false,
 };
 
 // Icon options for custom meals

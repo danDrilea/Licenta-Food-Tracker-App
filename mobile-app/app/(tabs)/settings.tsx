@@ -23,6 +23,7 @@ export default function SettingsScreen() {
     setNotificationsEnabled,
     setMealReminders,
     setRpiServerUrl,
+    setBiometricLock,
   } = useSettings();
   const colors = useThemeColors();
 
@@ -97,6 +98,18 @@ export default function SettingsScreen() {
           label="Meal Reminders"
           value={settings.mealReminders}
           onToggle={setMealReminders}
+          isLast
+        />
+      </SettingsGroup>
+
+      {/* ─── Privacy & Security ─── */}
+      <SettingsGroup title="Privacy & Security">
+        <SettingsToggleRow
+          icon="finger-print-outline"
+          iconColor="#c77ffb"
+          label="Biometric Lock"
+          value={settings.biometricLock}
+          onToggle={setBiometricLock}
           isLast
         />
       </SettingsGroup>
