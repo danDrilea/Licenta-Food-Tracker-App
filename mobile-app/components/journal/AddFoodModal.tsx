@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, Text, Modal, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, Alert } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { StyleSheet, View, Text, Modal, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, Alert, ScrollView, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useThemeColors } from '../../types/theme';
+import BarcodeScannerModal from './BarcodeScannerModal';
+import { BarcodeProduct, searchOpenFoodFacts } from '../../db/barcodeService';
 
 interface FoodData {
   name: string;
@@ -20,44 +22,153 @@ interface AddFoodModalProps {
   onClose: () => void;
   onSave: (food: FoodData) => void;
   onDelete?: (id: string) => void;
+  onLaunchPhotoScanner?: () => void;
 }
 
-export default function AddFoodModal({ visible, mealName, initialData, onClose, onSave, onDelete }: AddFoodModalProps) {
+export default function AddFoodModal({ visible, mealName, initialData, onClose, onSave, onDelete, onLaunchPhotoScanner }: AddFoodModalProps) {
   const [name, setName] = useState('');
-  const [amount, setAmount] = useState('');
+  const [grams, setGrams] = useState('');
   const [calories, setCalories] = useState('');
   const [protein, setProtein] = useState('');
   const [carbs, setCarbs] = useState('');
   const [fat, setFat] = useState('');
+  const [scannerVisible, setScannerVisible] = useState(false);
+  
+  // Choice HUB States
+  const [viewState, setViewState] = useState<'HUB' | 'MANUAL' | 'SEARCH'>('HUB');
+  
+  // OFF Search States
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<BarcodeProduct[]>([]);
+  const [searching, setSearching] = useState(false);
+
   const theme = useThemeColors();
+
+  const baseNutrientsRef = useRef<{ 
+    caloriesPer100g: number; 
+    proteinPer100g: number; 
+    carbsPer100g: number; 
+    fatPer100g: number; 
+    baseGrams: number; 
+    originalAmountString: string;
+  } | null>(null);
+
+  const recalcMacros = (gramsStr: string) => {
+    const base = baseNutrientsRef.current;
+    if (!base) return;
+    
+    const g = parseFloat(gramsStr) || 0;
+    const ratio = (g / 100);
+    
+    if (ratio >= 0) {
+      setCalories(Math.round(base.caloriesPer100g * ratio).toString());
+      setProtein(Number((base.proteinPer100g * ratio).toFixed(1)).toString());
+      setCarbs(Number((base.carbsPer100g * ratio).toFixed(1)).toString());
+      setFat(Number((base.fatPer100g * ratio).toFixed(1)).toString());
+    }
+  };
+
+  const cleanNumericInput = (text: string) => {
+    let cleaned = text.replace(/,/g, '.');
+    cleaned = cleaned.replace(/[^0-9.]/g, '');
+    const parts = cleaned.split('.');
+    if (parts.length > 2) {
+      cleaned = parts[0] + '.' + parts.slice(1).join('');
+    }
+    return cleaned;
+  };
+
+  const handleGramsChange = (val: string) => {
+    const cleaned = cleanNumericInput(val);
+    setGrams(cleaned);
+    recalcMacros(cleaned);
+  };
 
   useEffect(() => {
     if (visible) {
       if (initialData) {
         setName(initialData.name);
-        setAmount(initialData.amount);
         setCalories(initialData.calories ? Math.round(initialData.calories).toString() : '0');
         setProtein(initialData.protein !== undefined ? Number(Number(initialData.protein).toFixed(1)).toString() : '');
         setCarbs(initialData.carbs !== undefined ? Number(Number(initialData.carbs).toFixed(1)).toString() : '');
         setFat(initialData.fat !== undefined ? Number(Number(initialData.fat).toFixed(1)).toString() : '');
+
+        let g = 100;
+        const amt = initialData.amount || '';
+        const gMatch = amt.match(/(\d+(?:\.\d+)?)\s*g/i);
+        if (gMatch) {
+          g = parseFloat(gMatch[1]);
+        } else {
+          const numMatch = amt.match(/(\d+(?:\.\d+)?)/);
+          if (numMatch) {
+            g = parseFloat(numMatch[1]);
+          }
+        }
+        
+        setGrams(g.toString());
+
+        const ratio = (g / 100);
+        
+        if (ratio > 0) {
+          baseNutrientsRef.current = {
+            caloriesPer100g: (initialData.calories || 0) / ratio,
+            proteinPer100g: (initialData.protein || 0) / ratio,
+            carbsPer100g: (initialData.carbs || 0) / ratio,
+            fatPer100g: (initialData.fat || 0) / ratio,
+            baseGrams: g,
+            originalAmountString: amt
+          };
+        } else {
+          baseNutrientsRef.current = null;
+        }
+
+        setViewState('MANUAL'); // Bypass hub when editing or pre-filled from scanned tab
       } else {
         setName('');
-        setAmount('');
+        setGrams('');
         setCalories('');
         setProtein('');
         setCarbs('');
         setFat('');
+        setSearchQuery('');
+        setSearchResults([]);
+        setSearching(false);
+        baseNutrientsRef.current = null;
+        setViewState('HUB'); // Show the choice hub when adding fresh food
       }
     }
   }, [visible, initialData]);
+
+  const handleSearchSubmit = async () => {
+    if (!searchQuery.trim()) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setSearching(true);
+    try {
+      const results = await searchOpenFoodFacts(searchQuery);
+      setSearchResults(results);
+      if (results.length === 0) {
+        Alert.alert('No Results', 'No matching products found in the database.');
+      }
+    } catch (error) {
+      console.error('[AddFoodModal] API search error:', error);
+      Alert.alert('Search Failed', 'Could not query the Open Food Facts database. Please check your connection.');
+    } finally {
+      setSearching(false);
+    }
+  };
 
   const handleSave = () => {
     if (!name.trim() || !calories.trim()) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
+    let finalAmount = grams ? `${grams}g` : '1 serving';
+    if (!grams && baseNutrientsRef.current?.originalAmountString) {
+      finalAmount = baseNutrientsRef.current.originalAmountString;
+    }
+
     onSave({
       name: name.trim(),
-      amount: amount.trim() || '1 serving',
+      amount: finalAmount,
       calories: parseInt(calories, 10) || 0,
       protein: parseFloat(protein) || 0,
       carbs: parseFloat(carbs) || 0,
@@ -89,6 +200,7 @@ export default function AddFoodModal({ visible, mealName, initialData, onClose, 
   };
 
   const isEditing = !!initialData;
+  const isLocked = isEditing || !!baseNutrientsRef.current;
 
   return (
     <Modal visible={visible} animationType="slide" transparent>
@@ -98,109 +210,337 @@ export default function AddFoodModal({ visible, mealName, initialData, onClose, 
       >
         <View style={[styles.modalContent, { backgroundColor: theme.cardBg }]}>
           <View style={styles.header}>
-            <Text style={[styles.title, { color: theme.textPrimary }]}>{isEditing ? 'Edit' : 'Add to'} {mealName}</Text>
+            <View style={styles.headerLeftContainer}>
+              {viewState !== 'HUB' && !isEditing && (
+                <TouchableOpacity 
+                  onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setViewState('HUB'); }} 
+                  hitSlop={10}
+                  style={styles.backArrow}
+                >
+                  <Ionicons name="arrow-back" size={24} color={theme.textPrimary} />
+                </TouchableOpacity>
+              )}
+              <Text style={[styles.title, { color: theme.textPrimary }]}>
+                {viewState === 'HUB' 
+                  ? `Add to ${mealName}` 
+                  : viewState === 'SEARCH' 
+                    ? 'Search Database' 
+                    : isEditing 
+                      ? `Edit in ${mealName}` 
+                      : baseNutrientsRef.current 
+                        ? 'Adjust Portion'
+                        : 'Manual Input'
+                }
+              </Text>
+            </View>
             <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onClose(); }} hitSlop={10}>
               <Ionicons name="close" size={24} color={theme.textMuted} />
             </TouchableOpacity>
           </View>
 
-          <View style={styles.form}>
-            <Text style={[styles.label, { color: theme.textMuted }]}>Food Name</Text>
-            <TextInput
-              style={[styles.input, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.textPrimary }]}
-              placeholder="e.g. Apple"
-              placeholderTextColor={theme.textDim}
-              value={name}
-              onChangeText={setName}
-            />
+          {/* CHOICE HUB */}
+          {viewState === 'HUB' && (
+            <View style={styles.hubContainer}>
+              <Text style={[styles.hubSubtitle, { color: theme.textSecondary }]}>
+                Choose how you'd like to log your meal:
+              </Text>
 
-            <View style={styles.row}>
-              <View style={styles.flex1}>
-                <Text style={[styles.label, { color: theme.textMuted }]}>Amount</Text>
-                <TextInput
-                  style={[styles.input, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.textPrimary }]}
-                  placeholder="e.g. 100g"
-                  placeholderTextColor={theme.textDim}
-                  value={amount}
-                  onChangeText={setAmount}
-                />
-              </View>
-              <View style={{ width: 16 }} />
-              <View style={styles.flex1}>
-                <Text style={[styles.label, { color: theme.textMuted }]}>Calories (kcal)</Text>
-                <TextInput
-                  style={[styles.input, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.textPrimary }]}
-                  placeholder="0"
-                  placeholderTextColor={theme.textDim}
-                  keyboardType="numeric"
-                  value={calories}
-                  onChangeText={setCalories}
-                />
-              </View>
-            </View>
-
-            <View style={styles.row}>
-              <View style={styles.flex1}>
-                <Text style={[styles.label, { color: theme.textMuted }]}>Protein (g)</Text>
-                <TextInput
-                  style={[styles.input, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.textPrimary }]}
-                  placeholder="0"
-                  placeholderTextColor={theme.textDim}
-                  keyboardType="numeric"
-                  value={protein}
-                  onChangeText={setProtein}
-                />
-              </View>
-              <View style={{ width: 16 }} />
-              <View style={styles.flex1}>
-                <Text style={[styles.label, { color: theme.textMuted }]}>Carbs (g)</Text>
-                <TextInput
-                  style={[styles.input, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.textPrimary }]}
-                  placeholder="0"
-                  placeholderTextColor={theme.textDim}
-                  keyboardType="numeric"
-                  value={carbs}
-                  onChangeText={setCarbs}
-                />
-              </View>
-              <View style={{ width: 16 }} />
-              <View style={styles.flex1}>
-                <Text style={[styles.label, { color: theme.textMuted }]}>Fat (g)</Text>
-                <TextInput
-                  style={[styles.input, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.textPrimary }]}
-                  placeholder="0"
-                  placeholderTextColor={theme.textDim}
-                  keyboardType="numeric"
-                  value={fat}
-                  onChangeText={setFat}
-                />
-              </View>
-            </View>
-
-            <View style={styles.buttonRow}>
-              {isEditing && (
-                <TouchableOpacity 
-                  style={[styles.deleteButton]} 
-                  onPress={handleDelete}
+              <View style={styles.gridContainer}>
+                {/* 1. Manual Input */}
+                <TouchableOpacity
+                  style={[styles.hubCard, { backgroundColor: theme.inputBg, borderColor: theme.border }]}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    setViewState('MANUAL');
+                  }}
                 >
-                  <Ionicons name="trash-outline" size={20} color="#ef4444" />
+                  <View style={[styles.hubIconCircle, { backgroundColor: 'rgba(139, 92, 246, 0.15)' }]}>
+                    <Ionicons name="create-outline" size={22} color="#8b5cf6" />
+                  </View>
+                  <Text style={[styles.hubCardTitle, { color: theme.textPrimary }]}>Manual Input</Text>
+                  <Text style={[styles.hubCardDesc, { color: theme.textDim }]}>Type names & nutrition numbers</Text>
                 </TouchableOpacity>
-              )}
-              <TouchableOpacity 
-                style={[
-                  styles.saveButton, 
-                  isEditing && { flex: 1, marginTop: 0 },
-                  (!name.trim() || !calories.trim()) && styles.saveButtonDisabled
-                ]} 
-                onPress={handleSave}
-                disabled={!name.trim() || !calories.trim()}
-              >
-                <Text style={styles.saveButtonText}>{isEditing ? 'Save Changes' : 'Add Food'}</Text>
-              </TouchableOpacity>
+
+                {/* 2. Barcode Scan */}
+                <TouchableOpacity
+                  style={[styles.hubCard, { backgroundColor: theme.inputBg, borderColor: theme.border }]}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    setScannerVisible(true);
+                  }}
+                >
+                  <View style={[styles.hubIconCircle, { backgroundColor: 'rgba(199, 127, 251, 0.15)' }]}>
+                    <Ionicons name="barcode-outline" size={22} color="#c77ffb" />
+                  </View>
+                  <Text style={[styles.hubCardTitle, { color: theme.textPrimary }]}>Scan Barcode</Text>
+                  <Text style={[styles.hubCardDesc, { color: theme.textDim }]}>Point camera at product barcode</Text>
+                </TouchableOpacity>
+
+                {/* 3. AI Photo Scan */}
+                <TouchableOpacity
+                  style={[styles.hubCard, { backgroundColor: theme.inputBg, borderColor: theme.border }]}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    onClose();
+                    onLaunchPhotoScanner?.();
+                  }}
+                >
+                  <View style={[styles.hubIconCircle, { backgroundColor: 'rgba(59, 130, 246, 0.15)' }]}>
+                    <Ionicons name="camera-outline" size={22} color="#3b82f6" />
+                  </View>
+                  <Text style={[styles.hubCardTitle, { color: theme.textPrimary }]}>AI Photo Scan</Text>
+                  <Text style={[styles.hubCardDesc, { color: theme.textDim }]}>Estimate volume & mass by photo</Text>
+                </TouchableOpacity>
+
+                {/* 4. Search Database */}
+                <TouchableOpacity
+                  style={[styles.hubCard, { backgroundColor: theme.inputBg, borderColor: theme.border }]}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    setViewState('SEARCH');
+                  }}
+                >
+                  <View style={[styles.hubIconCircle, { backgroundColor: 'rgba(16, 185, 129, 0.15)' }]}>
+                    <Ionicons name="search-outline" size={22} color="#10b981" />
+                  </View>
+                  <Text style={[styles.hubCardTitle, { color: theme.textPrimary }]}>Search OFF</Text>
+                  <Text style={[styles.hubCardDesc, { color: theme.textDim }]}>Search global food database</Text>
+                </TouchableOpacity>
+              </View>
             </View>
-          </View>
+          )}
+
+          {/* MANUAL FORM INPUT */}
+          {viewState === 'MANUAL' && (
+            <ScrollView 
+              style={styles.form}
+              keyboardShouldPersistTaps="handled"
+              keyboardDismissMode="interactive"
+            >
+              <Text style={[styles.label, { color: theme.textMuted }]}>Food Name</Text>
+              <TextInput
+                style={[
+                  styles.input, 
+                  { backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.textPrimary },
+                  isEditing && { opacity: 0.6, backgroundColor: 'transparent' }
+                ]}
+                placeholder="e.g. Apple"
+                placeholderTextColor={theme.textDim}
+                value={name}
+                onChangeText={setName}
+                editable={!isEditing}
+              />
+
+              <View style={styles.row}>
+                <View style={styles.flex1}>
+                  <Text style={[styles.label, { color: theme.textMuted }]} numberOfLines={1}>
+                    {baseNutrientsRef.current ? 'Grams per Serving' : 'Grams'} {baseNutrientsRef.current ? `• ${baseNutrientsRef.current.originalAmountString}` : ''}
+                  </Text>
+                  <TextInput
+                    style={[styles.input, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.textPrimary }]}
+                    placeholder="100"
+                    placeholderTextColor={theme.textDim}
+                    keyboardType="decimal-pad"
+                    value={grams}
+                    onChangeText={handleGramsChange}
+                  />
+                </View>
+                <View style={{ width: 16 }} />
+                <View style={styles.flex1}>
+                  <Text style={[styles.label, { color: theme.textMuted }]}>Calories (kcal)</Text>
+                  <TextInput
+                    style={[styles.input, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.textPrimary }, isLocked && { opacity: 0.6, backgroundColor: 'transparent' }]}
+                    placeholder="0"
+                    placeholderTextColor={theme.textDim}
+                    keyboardType="decimal-pad"
+                    value={calories}
+                    editable={!isLocked}
+                    onChangeText={(val) => setCalories(cleanNumericInput(val))}
+                  />
+                </View>
+              </View>
+
+              <View style={styles.row}>
+                <View style={styles.flex1}>
+                  <Text style={[styles.label, { color: theme.textMuted }]}>Protein (g)</Text>
+                  <TextInput
+                    style={[styles.input, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.textPrimary }, isLocked && { opacity: 0.6, backgroundColor: 'transparent' }]}
+                    placeholder="0"
+                    placeholderTextColor={theme.textDim}
+                    keyboardType="decimal-pad"
+                    value={protein}
+                    editable={!isLocked}
+                    onChangeText={(val) => setProtein(cleanNumericInput(val))}
+                  />
+                </View>
+                <View style={{ width: 16 }} />
+                <View style={styles.flex1}>
+                  <Text style={[styles.label, { color: theme.textMuted }]}>Carbs (g)</Text>
+                  <TextInput
+                    style={[styles.input, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.textPrimary }, isLocked && { opacity: 0.6, backgroundColor: 'transparent' }]}
+                    placeholder="0"
+                    placeholderTextColor={theme.textDim}
+                    keyboardType="decimal-pad"
+                    value={carbs}
+                    editable={!isLocked}
+                    onChangeText={(val) => setCarbs(cleanNumericInput(val))}
+                  />
+                </View>
+                <View style={{ width: 16 }} />
+                <View style={styles.flex1}>
+                  <Text style={[styles.label, { color: theme.textMuted }]}>Fat (g)</Text>
+                  <TextInput
+                    style={[styles.input, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.textPrimary }, isLocked && { opacity: 0.6, backgroundColor: 'transparent' }]}
+                    placeholder="0"
+                    placeholderTextColor={theme.textDim}
+                    keyboardType="decimal-pad"
+                    value={fat}
+                    editable={!isLocked}
+                    onChangeText={(val) => setFat(cleanNumericInput(val))}
+                  />
+                </View>
+              </View>
+
+              <View style={styles.buttonRow}>
+                {isEditing && (
+                  <TouchableOpacity 
+                    style={[styles.deleteButton]} 
+                    onPress={handleDelete}
+                  >
+                    <Ionicons name="trash-outline" size={20} color="#ef4444" />
+                  </TouchableOpacity>
+                )}
+                <TouchableOpacity 
+                  style={[
+                    styles.saveButton, 
+                    isEditing && { flex: 1, marginTop: 0 },
+                    (!name.trim() || !calories.trim()) && styles.saveButtonDisabled
+                  ]} 
+                  onPress={handleSave}
+                  disabled={!name.trim() || !calories.trim()}
+                >
+                  <Text style={styles.saveButtonText}>{isEditing ? 'Save Changes' : 'Add Food'}</Text>
+                </TouchableOpacity>
+              </View>
+            </ScrollView>
+          )}
+
+          {/* SEARCH DATABASE TAB */}
+          {viewState === 'SEARCH' && (
+            <View style={styles.searchContainer}>
+              <View style={styles.searchBar}>
+                <TextInput
+                  style={[styles.searchInput, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.textPrimary }]}
+                  placeholder="Search brand or product (e.g. Oreo)"
+                  placeholderTextColor={theme.textDim}
+                  value={searchQuery}
+                  onChangeText={setSearchQuery}
+                  onSubmitEditing={handleSearchSubmit}
+                  returnKeyType="search"
+                  autoFocus
+                />
+                <TouchableOpacity 
+                  style={[styles.searchBtn, { backgroundColor: '#8b5cf6' }]}
+                  onPress={handleSearchSubmit}
+                  disabled={searching}
+                >
+                  {searching ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                  ) : (
+                    <Ionicons name="search" size={20} color="#fff" />
+                  )}
+                </TouchableOpacity>
+              </View>
+
+              {searching ? (
+                <View style={styles.searchingCenter}>
+                  <ActivityIndicator size="large" color="#8b5cf6" />
+                  <Text style={{ color: theme.textSecondary, marginTop: 12, fontWeight: '500' }}>
+                    Searching Open Food Facts...
+                  </Text>
+                </View>
+              ) : searchResults.length > 0 ? (
+                <ScrollView 
+                  style={styles.resultsScroll} 
+                  contentContainerStyle={styles.resultsContent}
+                  showsVerticalScrollIndicator={false}
+                >
+                  {searchResults.map((prod, idx) => (
+                    <TouchableOpacity
+                      key={idx}
+                      style={[styles.resultCard, { backgroundColor: theme.inputBg, borderColor: theme.border }]}
+                      onPress={() => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        setName(prod.name);
+                        setCalories(prod.calories.toString());
+                        setProtein(prod.protein.toString());
+                        setCarbs(prod.carbs.toString());
+                        setFat(prod.fat.toString());
+
+                        const baseGrams = prod.servingGrams || 100;
+                        setGrams(baseGrams.toString());
+
+                        // Set base nutrients for scaling
+                        baseNutrientsRef.current = {
+                          caloriesPer100g: prod.caloriesPer100g || prod.calories / (baseGrams / 100),
+                          proteinPer100g: prod.proteinPer100g || prod.protein / (baseGrams / 100),
+                          carbsPer100g: prod.carbsPer100g || prod.carbs / (baseGrams / 100),
+                          fatPer100g: prod.fatPer100g || prod.fat / (baseGrams / 100),
+                          baseGrams: baseGrams,
+                          originalAmountString: prod.amount
+                        };
+
+                        setViewState('MANUAL');
+                      }}
+                    >
+                      <View style={styles.resultInfo}>
+                        <Text style={[styles.resultName, { color: theme.textPrimary }]} numberOfLines={2}>{prod.name}</Text>
+                        <Text style={[styles.resultMeta, { color: theme.textDim }]} numberOfLines={1}>
+                          Portion: {prod.amount} • {prod.calories} kcal
+                        </Text>
+                      </View>
+                      <Ionicons name="chevron-forward" size={18} color={theme.textDim} style={styles.chevron} />
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              ) : (
+                <View style={styles.searchingCenter}>
+                  <Ionicons name="search-outline" size={48} color={theme.textMuted} />
+                  <Text style={{ color: theme.textDim, marginTop: 12, textAlign: 'center', fontSize: 13, lineHeight: 18 }}>
+                    Enter a product name above and tap Search.{"\n"}Only queries on button press to protect rate limits.
+                  </Text>
+                </View>
+              )}
+            </View>
+          )}
         </View>
       </KeyboardAvoidingView>
+
+      <BarcodeScannerModal
+        visible={scannerVisible}
+        onClose={() => setScannerVisible(false)}
+        onScanSuccess={(product) => {
+          setName(product.name);
+          setCalories(product.calories.toString());
+          setProtein(product.protein.toString());
+          setCarbs(product.carbs.toString());
+          setFat(product.fat.toString());
+
+          const baseGrams = product.servingGrams || 100;
+          setGrams(baseGrams.toString());
+
+          // Set base nutrients for portion scaling
+          baseNutrientsRef.current = {
+            caloriesPer100g: product.caloriesPer100g || product.calories / (baseGrams / 100),
+            proteinPer100g: product.proteinPer100g || product.protein / (baseGrams / 100),
+            carbsPer100g: product.carbsPer100g || product.carbs / (baseGrams / 100),
+            fatPer100g: product.fatPer100g || product.fat / (baseGrams / 100),
+            baseGrams: baseGrams,
+            originalAmountString: product.amount
+          };
+          setViewState('MANUAL');
+        }}
+      />
     </Modal>
   );
 }
@@ -278,6 +618,159 @@ const styles = StyleSheet.create({
   saveButtonText: {
     color: '#ffffff',
     fontSize: 16,
+    fontWeight: '600',
+  },
+  barcodeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingVertical: 12,
+    marginBottom: 4,
+    borderStyle: 'dashed',
+  },
+  barcodeButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  headerLeftContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  backArrow: {
+    paddingRight: 4,
+  },
+  
+  // Hub Grid
+  hubContainer: {
+    paddingVertical: 8,
+  },
+  hubSubtitle: {
+    fontSize: 14,
+    fontWeight: '500',
+    lineHeight: 20,
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  gridContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    justifyContent: 'space-between',
+    paddingBottom: 16,
+  },
+  hubCard: {
+    width: '48%',
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    minHeight: 120,
+  },
+  hubIconCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  hubCardTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+  hubCardDesc: {
+    fontSize: 10,
+    textAlign: 'center',
+    lineHeight: 13,
+  },
+
+  // Search API View
+  searchContainer: {
+    gap: 14,
+    paddingBottom: 16,
+    height: 400,
+  },
+  searchBar: {
+    flexDirection: 'row',
+    gap: 8,
+    alignItems: 'center',
+  },
+  searchInput: {
+    flex: 1,
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingHorizontal: 16,
+    height: 48,
+    fontSize: 15,
+  },
+  searchBtn: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#8b5cf6',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  searchingCenter: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  resultsScroll: {
+    flex: 1,
+  },
+  resultsContent: {
+    gap: 10,
+    paddingBottom: 10,
+  },
+  resultCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  resultInfo: {
+    flex: 1,
+    gap: 4,
+    paddingRight: 12,
+  },
+  resultName: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  resultMeta: {
+    fontSize: 12,
+  },
+  chevron: {
+    opacity: 0.7,
+  },
+  stepperBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    borderWidth: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  stepperValue: {
+    flex: 1,
+    textAlign: 'center',
+    fontSize: 18,
     fontWeight: '600',
   },
 });

@@ -59,6 +59,7 @@ export function useFoodLogs(dateStr: string) {
         [id, entry.meal_id, entry.date, entry.name, entry.amount, entry.calories, entry.protein, entry.carbs, entry.fat]
       );
       await fetchLogs();
+      DeviceEventEmitter.emit('food_logs_changed');
     } catch (error) {
       console.error('Error adding food log:', error);
     }
@@ -71,6 +72,7 @@ export function useFoodLogs(dateStr: string) {
         [entry.meal_id, entry.date, entry.name, entry.amount, entry.calories, entry.protein, entry.carbs, entry.fat, id]
       );
       await fetchLogs();
+      DeviceEventEmitter.emit('food_logs_changed');
     } catch (error) {
       console.error('Error updating food log:', error);
     }
@@ -80,6 +82,7 @@ export function useFoodLogs(dateStr: string) {
     try {
       await db.runAsync('DELETE FROM food_entries WHERE id = ?', [id]);
       await fetchLogs();
+      DeviceEventEmitter.emit('food_logs_changed');
     } catch (error) {
       console.error('Error deleting food log:', error);
     }

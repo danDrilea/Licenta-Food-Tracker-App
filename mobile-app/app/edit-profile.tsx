@@ -171,7 +171,11 @@ export default function EditProfileScreen() {
         ),
       }} />
 
-      <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
+      <ScrollView 
+        contentContainerStyle={styles.scrollContent} 
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="interactive"
+      >
         {/* Name */}
         <Text style={[styles.sectionLabel, { color: theme.textMuted }]}>NAME</Text>
         <View style={[styles.inputCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>

@@ -44,6 +44,7 @@ export default function LogWeightScreen() {
         <ScrollView 
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="interactive"
         >
           <View style={styles.illustration}>
           <View style={styles.iconCircle}>

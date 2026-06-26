@@ -1,11 +1,12 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { StyleSheet, View, ScrollView, Alert, Modal, Text, ActivityIndicator } from 'react-native';
+import { StyleSheet, View, ScrollView, Alert, Modal, Text, ActivityIndicator, DeviceEventEmitter } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import DateStrip from '../../components/journal/DateStrip';
 import DailyMacroSummary from '../../components/journal/DailyMacroSummary';
 import MealSection, { MealData } from '../../components/journal/MealSection';
 import WaterTracker from '../../components/dashboard/WaterTracker';
 import AddFoodModal from '../../components/journal/AddFoodModal';
+import ScanPhotoFlowModal from '../../components/journal/ScanPhotoFlowModal';
 import { useSettings } from '../../contexts/SettingsContext';
 import { useFoodLogs, FoodEntry } from '../../hooks/useFoodLogs';
 import { useDailyLogs } from '../../hooks/useDailyLogs';
@@ -20,6 +21,7 @@ export default function JournalScreen() {
   const mealPositions = useRef<Record<string, number>>({});
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [addingFoodToMeal, setAddingFoodToMeal] = useState<{ id: string, name: string } | null>(null);
+  const [photoScannerVisible, setPhotoScannerVisible] = useState(false);
   const { settings } = useSettings();
   const { profile } = useProfile();
   const colors = useThemeColors();
@@ -27,6 +29,14 @@ export default function JournalScreen() {
   // AI Advice States
   const [mealAdvices, setMealAdvices] = useState<Record<string, string>>({});
   const [adviceLoading, setAdviceLoading] = useState(false);
+
+  // Clear AI Advice when a meal is modified
+  useEffect(() => {
+    const subscription = DeviceEventEmitter.addListener('food_logs_changed', () => {
+      setMealAdvices({});
+    });
+    return () => subscription.remove();
+  }, []);
 
   const handleAnalyzeMeal = async (meal: MealData) => {
     if (meal.items.length === 0) {
@@ -271,6 +281,7 @@ export default function JournalScreen() {
           setEditingFoodItem(null);
         }}
         onDelete={(id) => deleteFoodLog(id)}
+        onLaunchPhotoScanner={() => setPhotoScannerVisible(true)}
         onSave={(food) => {
           if (addingFoodToMeal) {
             if (editingFoodItem) {
@@ -288,6 +299,12 @@ export default function JournalScreen() {
             }
           }
         }}
+      />
+
+      {/* AI Photo Flow Modal */}
+      <ScanPhotoFlowModal
+        visible={photoScannerVisible}
+        onClose={() => setPhotoScannerVisible(false)}
       />
 
       {/* AI Advice Waiting Modal Overlay */}

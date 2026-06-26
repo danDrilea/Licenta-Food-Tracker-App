@@ -32,6 +32,8 @@ export default function SettingsScreen() {
       style={[styles.scrollView, { backgroundColor: colors.background }]}
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
+      keyboardShouldPersistTaps="handled"
+      keyboardDismissMode="interactive"
     >
       {/* ─── Appearance ─── */}
       <SettingsGroup title="Appearance">

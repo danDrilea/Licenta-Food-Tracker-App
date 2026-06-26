@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, Text, Modal, Pressable, ActivityIndicator, Alert, ScrollView, DeviceEventEmitter } from 'react-native';
+import { StyleSheet, View, Text, Modal, Pressable, ActivityIndicator, Alert, ScrollView, DeviceEventEmitter, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import * as Haptics from 'expo-haptics';
@@ -13,11 +13,12 @@ interface ScanPhotoFlowModalProps {
   onClose: () => void;
 }
 
-type FlowStep = 'PICK_SOURCE' | 'HEIGHT_SELECT' | 'PROCESSING' | 'MEAL_SELECT';
+type FlowStep = 'PICK_SOURCE' | 'HEIGHT_SELECT' | 'PROCESSING' | 'ADJUST_ITEMS' | 'MEAL_SELECT';
 
 interface DetectedItem {
+  id: string;
   name: string;
-  grams: number;
+  grams: string; // Store as string for TextInput compatibility
 }
 
 export default function ScanPhotoFlowModal({ visible, onClose }: ScanPhotoFlowModalProps) {
@@ -29,13 +30,25 @@ export default function ScanPhotoFlowModal({ visible, onClose }: ScanPhotoFlowMo
   const [step, setStep] = useState<FlowStep>('PICK_SOURCE');
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [detectedItems, setDetectedItems] = useState<DetectedItem[]>([]);
+  const [foodClasses, setFoodClasses] = useState<string[]>([]);
+  const [showAddFood, setShowAddFood] = useState(false);
+  const [editingItemId, setEditingItemId] = useState<string | null>(null);
 
-  // Reset state on modal open/close
+  // Fetch food classes and reset state on modal open/close
   useEffect(() => {
     if (visible) {
       setStep('PICK_SOURCE');
       setSelectedImage(null);
       setDetectedItems([]);
+      setShowAddFood(false);
+      setEditingItemId(null);
+
+      // Fetch the 73 recognizable classes
+      db.getAllAsync<{ name: string }>('SELECT name FROM food_classes_nutrition ORDER BY name ASC')
+        .then((rows) => {
+          setFoodClasses(rows.map(r => r.name));
+        })
+        .catch(err => console.error('Failed to fetch food classes:', err));
     }
   }, [visible]);
 
@@ -132,8 +145,9 @@ export default function ScanPhotoFlowModal({ visible, onClose }: ScanPhotoFlowMo
         });
 
         const compiledItems: DetectedItem[] = Object.keys(aggregationMap).map(name => ({
-          name,
-          grams: aggregationMap[name]
+          id: Date.now().toString() + Math.random().toString(),
+          name: formatFoodName(name),
+          grams: Math.round(aggregationMap[name]).toString()
         }));
 
         console.log('AI Scanner Compiled Items:', JSON.stringify(compiledItems, null, 2));
@@ -145,7 +159,7 @@ export default function ScanPhotoFlowModal({ visible, onClose }: ScanPhotoFlowMo
         }
 
         setDetectedItems(compiledItems);
-        setStep('MEAL_SELECT');
+        setStep('ADJUST_ITEMS');
       } else {
         throw new Error(result.message || 'Analysis failed');
       }
@@ -180,7 +194,7 @@ export default function ScanPhotoFlowModal({ visible, onClose }: ScanPhotoFlowMo
         fat: number;
       }[] = [];
       for (const item of detectedItems) {
-        const normalizedKey = item.name.toLowerCase().trim();
+        const normalizedKey = item.name.toLowerCase().trim().replace(/ /g, '_');
         const nutrientsRow = await db.getFirstAsync<{ calories: number, protein: number, carbs: number, fat: number }>(
           'SELECT calories, protein, carbs, fat FROM food_classes_nutrition WHERE name = ?',
           [normalizedKey]
@@ -192,7 +206,10 @@ export default function ScanPhotoFlowModal({ visible, onClose }: ScanPhotoFlowMo
         const carbsPer100g = nutrientsRow?.carbs ?? 10;
         const fatPer100g = nutrientsRow?.fat ?? 2;
 
-        const scale = item.grams / 100;
+        const parsedGrams = parseFloat(item.grams) || 0;
+        if (parsedGrams <= 0) continue; // Skip invalid items
+
+        const scale = parsedGrams / 100;
         const calories = Math.round(caloriesPer100g * scale);
         const protein = Math.round((proteinPer100g * scale) * 10) / 10;
         const carbs = Math.round((carbsPer100g * scale) * 10) / 10;
@@ -200,7 +217,7 @@ export default function ScanPhotoFlowModal({ visible, onClose }: ScanPhotoFlowMo
 
         const id = Math.random().toString(36).substring(2, 15);
         const capitalizedName = formatFoodName(item.name);
-        const amountText = `${Math.round(item.grams)} g`;
+        const amountText = `${Math.round(parsedGrams)} g`;
 
         console.log(`[SQL Lookup] Item: ${capitalizedName} (${amountText}) -> Calories: ${calories}, P: ${protein}, C: ${carbs}, F: ${fat}`);
 
@@ -235,7 +252,7 @@ export default function ScanPhotoFlowModal({ visible, onClose }: ScanPhotoFlowMo
 
       // Notify active listeners immediately
       DeviceEventEmitter.emit('food_logs_changed');
-      
+
       // Also notify after a short delay to ensure any navigation transitions or database WAL writes have fully settled
       setTimeout(() => {
         console.log('[ScanPhotoFlowModal] Emitting deferred "food_logs_changed" event');
@@ -254,7 +271,10 @@ export default function ScanPhotoFlowModal({ visible, onClose }: ScanPhotoFlowMo
       animationType="slide"
       onRequestClose={onClose}
     >
-      <View style={[styles.modalOverlay, { backgroundColor: theme.overlay }]}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={[styles.modalOverlay, { backgroundColor: theme.overlay }]}
+      >
         <View style={[styles.modalContainer, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
           {/* Header */}
           <View style={[styles.header, { borderBottomColor: theme.border }]}>
@@ -273,7 +293,7 @@ export default function ScanPhotoFlowModal({ visible, onClose }: ScanPhotoFlowMo
                 <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
                   Scan food items and estimate nutrition values by capturing or uploading a photo.
                 </Text>
-                
+
                 <View style={styles.sourceGrid}>
                   <Pressable
                     style={({ pressed }) => [
@@ -394,17 +414,145 @@ export default function ScanPhotoFlowModal({ visible, onClose }: ScanPhotoFlowMo
               </View>
             )}
 
+            {step === 'ADJUST_ITEMS' && (
+              <View style={styles.stepContainer}>
+                <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
+                  Review detected items:
+                </Text>
+
+                <ScrollView
+                  style={{ maxHeight: 350, marginBottom: 16 }}
+                  contentContainerStyle={{ gap: 12 }}
+                  keyboardShouldPersistTaps="handled"
+                  keyboardDismissMode="interactive"
+                >
+                  {detectedItems.map((item, idx) => (
+                    <View key={item.id} style={[styles.adjustCard, { backgroundColor: theme.inputBg, borderColor: theme.border }]}>
+                      <View style={styles.adjustCardHeader}>
+                        <Pressable
+                          style={[{ paddingVertical: 4, borderBottomWidth: 1, borderBottomColor: theme.border, flex: 1, marginRight: 16 }]}
+                          onPress={() => setEditingItemId(editingItemId === item.id ? null : item.id)}
+                        >
+                          <Text style={[styles.adjustName, { color: theme.textPrimary }]}>{item.name}</Text>
+                        </Pressable>
+                        <Pressable
+                          onPress={() => {
+                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                            setDetectedItems(prev => prev.filter(p => p.id !== item.id));
+                          }}
+                          hitSlop={10}
+                        >
+                          <Ionicons name="trash-outline" size={20} color="#ef4444" />
+                        </Pressable>
+                      </View>
+
+                      <View style={styles.adjustInputRow}>
+                        <Text style={{ color: theme.textMuted, fontSize: 13, marginRight: 8 }}>Grams</Text>
+                        <TextInput
+                          style={[styles.gramsInput, { color: theme.textPrimary, borderColor: theme.inputBorder }]}
+                          keyboardType="decimal-pad"
+                          value={item.grams}
+                          onChangeText={(val) => {
+                            let cleaned = val.replace(/,/g, '.').replace(/[^0-9.]/g, '');
+                            const parts = cleaned.split('.');
+                            if (parts.length > 2) cleaned = parts[0] + '.' + parts.slice(1).join('');
+
+                            setDetectedItems(prev => prev.map(p =>
+                              p.id === item.id ? { ...p, grams: cleaned } : p
+                            ));
+                          }}
+                        />
+                      </View>
+
+                      {editingItemId === item.id && (
+                        <View style={[styles.pickerContainer, { backgroundColor: theme.background, borderColor: theme.border, marginTop: 12 }]}>
+                          <Text style={{ color: theme.textSecondary, marginBottom: 8, fontSize: 13, fontWeight: '500' }}>Select correct food class:</Text>
+                          <ScrollView style={{ maxHeight: 150 }} nestedScrollEnabled keyboardShouldPersistTaps="handled">
+                            {foodClasses.map(food => (
+                              <Pressable
+                                key={food}
+                                style={({ pressed }) => [
+                                  { paddingVertical: 10, paddingHorizontal: 12, borderBottomWidth: 0.5, borderBottomColor: theme.border },
+                                  pressed && { backgroundColor: theme.overlay }
+                                ]}
+                                onPress={() => {
+                                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                                  setDetectedItems(prev => prev.map(p => p.id === item.id ? { ...p, name: formatFoodName(food) } : p));
+                                  setEditingItemId(null);
+                                }}
+                              >
+                                <Text style={{ color: theme.textPrimary, fontSize: 15 }}>{formatFoodName(food)}</Text>
+                              </Pressable>
+                            ))}
+                          </ScrollView>
+                        </View>
+                      )}
+                    </View>
+                  ))}
+
+                  {/* Add Manual Food Section */}
+                  <View style={{ marginTop: 8 }}>
+                    {!showAddFood ? (
+                      <Pressable
+                        style={[styles.addFoodBtn, { borderColor: theme.border }]}
+                        onPress={() => setShowAddFood(true)}
+                      >
+                        <Ionicons name="add" size={20} color="#8b5cf6" />
+                        <Text style={{ color: '#8b5cf6', fontWeight: '600' }}>Add Missing Food</Text>
+                      </Pressable>
+                    ) : (
+                      <View style={[styles.pickerContainer, { backgroundColor: theme.inputBg, borderColor: theme.border }]}>
+                        <Text style={{ color: theme.textSecondary, marginBottom: 8, fontSize: 13, fontWeight: '500' }}>Select food class to add:</Text>
+                        <ScrollView style={{ maxHeight: 150 }} nestedScrollEnabled keyboardShouldPersistTaps="handled">
+                          {foodClasses.map(food => (
+                            <Pressable
+                              key={food}
+                              style={({ pressed }) => [
+                                { paddingVertical: 10, paddingHorizontal: 12, borderBottomWidth: 0.5, borderBottomColor: theme.border },
+                                pressed && { backgroundColor: theme.overlay }
+                              ]}
+                              onPress={() => {
+                                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                                setDetectedItems(prev => [...prev, { id: Date.now().toString(), name: formatFoodName(food), grams: '100' }]);
+                                setShowAddFood(false);
+                              }}
+                            >
+                              <Text style={{ color: theme.textPrimary, fontSize: 15 }}>{formatFoodName(food)}</Text>
+                            </Pressable>
+                          ))}
+                        </ScrollView>
+                        <Pressable style={{ marginTop: 8, alignSelf: 'flex-end' }} onPress={() => setShowAddFood(false)}>
+                          <Text style={{ color: theme.textMuted, fontSize: 13 }}>Cancel</Text>
+                        </Pressable>
+                      </View>
+                    )}
+                  </View>
+                </ScrollView>
+
+                <Pressable
+                  style={[styles.primaryBtn, detectedItems.length === 0 && { opacity: 0.5 }]}
+                  disabled={detectedItems.length === 0}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                    setStep('MEAL_SELECT');
+                  }}
+                >
+                  <Text style={styles.primaryBtnText}>Continue to Meal Selection</Text>
+                </Pressable>
+              </View>
+            )}
+
             {step === 'MEAL_SELECT' && (
               <View style={styles.stepContainer}>
                 <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
                   Detected food item(s):
                 </Text>
-                
+
                 <View style={[styles.detectedItemsBox, { backgroundColor: theme.background, borderColor: theme.border }]}>
                   {detectedItems.map((item, idx) => (
-                    <View key={item.name} style={[styles.detectedRow, idx < detectedItems.length - 1 && { borderBottomWidth: 0.5, borderBottomColor: theme.border }]}>
+                    <View key={item.id} style={[styles.detectedRow, idx < detectedItems.length - 1 && { borderBottomWidth: 0.5, borderBottomColor: theme.border }]}>
                       <Text style={[styles.detectedName, { color: theme.textPrimary }]}>{formatFoodName(item.name)}</Text>
-                      <Text style={[styles.detectedGrams, { color: '#c77ffb' }]}>{Math.round(item.grams)} g</Text>
+                      <Text style={[styles.detectedGrams, { color: '#c77ffb' }]}>{parseFloat(item.grams) || 0} g</Text>
                     </View>
                   ))}
                 </View>
@@ -438,7 +586,7 @@ export default function ScanPhotoFlowModal({ visible, onClose }: ScanPhotoFlowMo
             )}
           </View>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
@@ -606,5 +754,59 @@ const styles = StyleSheet.create({
   detectedGrams: {
     fontSize: 14,
     fontWeight: '700',
+  },
+  primaryBtn: {
+    backgroundColor: '#8b5cf6',
+    borderRadius: 16,
+    paddingVertical: 14,
+    alignItems: 'center',
+    marginTop: 16,
+  },
+  primaryBtnText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  adjustCard: {
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 12,
+  },
+  adjustCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  adjustName: {
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  adjustInputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  gramsInput: {
+    flex: 1,
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    height: 40,
+    fontSize: 15,
+  },
+  addFoodBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    borderRadius: 12,
+    paddingVertical: 12,
+  },
+  pickerContainer: {
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 12,
   },
 });

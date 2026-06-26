@@ -60,12 +60,6 @@ export default function LockScreen({ onUnlock }: LockScreenProps) {
     }
   }, [isAuthenticating, onUnlock]);
 
-  // Trigger auth automatically on mount
-  useEffect(() => {
-    const timer = setTimeout(() => authenticate(), 300);
-    return () => clearTimeout(timer);
-  }, []);  // Only on mount
-
   const biometricIcon =
     biometricType === 'face' ? 'scan-outline' :
     biometricType === 'fingerprint' ? 'finger-print-outline' :

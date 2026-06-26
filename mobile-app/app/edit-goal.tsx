@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, Text, TextInput, TouchableOpacity, ScrollView, Pressable } from 'react-native';
+import { StyleSheet, View, Text, TextInput, TouchableOpacity, ScrollView, Pressable, KeyboardAvoidingView, Platform } from 'react-native';
 import { useRouter, Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -46,7 +46,10 @@ export default function EditGoalScreen() {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.background }]}>
+    <KeyboardAvoidingView 
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={[styles.container, { backgroundColor: theme.background }]}
+    >
       <Stack.Screen options={{
         title: 'Fitness Goal',
         headerStyle: { backgroundColor: theme.cardBg },
@@ -58,7 +61,11 @@ export default function EditGoalScreen() {
         ),
       }} />
 
-      <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
+      <ScrollView 
+        contentContainerStyle={styles.scrollContent} 
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="interactive"
+      >
         <Text style={[styles.sectionLabel, { color: theme.textMuted }]}>CHOOSE YOUR GOAL</Text>
         <View style={styles.grid}>
           {GOAL_OPTIONS.map((opt) => (
@@ -140,7 +147,7 @@ export default function EditGoalScreen() {
 
         <View style={{ height: 40 }} />
       </ScrollView>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 

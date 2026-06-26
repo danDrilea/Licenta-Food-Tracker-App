@@ -1,9 +1,16 @@
 import { Tabs, useRouter } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useState } from 'react';
-import { View, Text, StyleSheet, Pressable, Modal, Image } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Modal, Image, ScrollView, DeviceEventEmitter, Alert } from 'react-native';
 import { useThemeColors } from '../../types/theme';
 import ScanPhotoFlowModal from '../../components/journal/ScanPhotoFlowModal';
+import BarcodeScannerModal from '../../components/journal/BarcodeScannerModal';
+import AddFoodModal from '../../components/journal/AddFoodModal';
+import { BarcodeProduct } from '../../db/barcodeService';
+import { useSettings } from '../../contexts/SettingsContext';
+import { useSQLiteContext } from 'expo-sqlite';
+import { getLocalDateStr } from '../../types/utils';
+import * as Haptics from 'expo-haptics';
 
 const MENU_OPTIONS = [
   { icon: 'camera' as const, label: 'Scan Photo' },
@@ -16,9 +23,48 @@ const triangleImg = require('../../assets/images/cool-triangle.webp');
 
 export default function TabLayout() {
   const router = useRouter();
+  const db = useSQLiteContext();
+  const { settings } = useSettings();
   const [menuOpen, setMenuOpen] = useState(false);
   const [scanModalVisible, setScanModalVisible] = useState(false);
   const colors = useThemeColors();
+
+  // Barcode Scanning Flow States
+  const [barcodeScannerVisible, setBarcodeScannerVisible] = useState(false);
+  const [scannedProduct, setScannedProduct] = useState<BarcodeProduct | null>(null);
+  const [mealSelectorVisible, setMealSelectorVisible] = useState(false);
+  const [selectedMeal, setSelectedMeal] = useState<{ id: string, name: string } | null>(null);
+
+  const handleSaveScannedFood = async (food: any) => {
+    if (!selectedMeal) return;
+    const localDateStr = getLocalDateStr();
+    const id = Math.random().toString(36).substring(2, 15);
+
+    try {
+      await db.runAsync(
+        'INSERT INTO food_entries (id, meal_id, date, name, amount, calories, protein, carbs, fat) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        [id, selectedMeal.id, localDateStr, food.name, food.amount, food.calories, food.protein, food.carbs, food.fat]
+      );
+      
+      console.log(`[TabLayout] Saved scanned food: ${food.name} to meal: ${selectedMeal.name}`);
+      
+      // Notify active log subscribers
+      DeviceEventEmitter.emit('food_logs_changed');
+      
+      // Delay second notification to let layout settle
+      setTimeout(() => {
+        DeviceEventEmitter.emit('food_logs_changed');
+      }, 250);
+
+      router.push('/journal');
+    } catch (error) {
+      console.error('[TabLayout] Error saving scanned food:', error);
+      Alert.alert('Database Error', 'Could not save the food item to your journal.');
+    } finally {
+      setScannedProduct(null);
+      setSelectedMeal(null);
+    }
+  };
 
   return (
     <>
@@ -130,6 +176,8 @@ export default function TabLayout() {
                     router.push('/log-weight');
                   } else if (option.label === 'Scan Photo') {
                     setScanModalVisible(true);
+                  } else if (option.label === 'Scan Barcode') {
+                    setBarcodeScannerVisible(true);
                   } else {
                     console.log(option.label);
                   }
@@ -150,6 +198,88 @@ export default function TabLayout() {
         visible={scanModalVisible}
         onClose={() => setScanModalVisible(false)}
       />
+
+      {/* Barcode Scanner Modal */}
+      <BarcodeScannerModal
+        visible={barcodeScannerVisible}
+        onClose={() => setBarcodeScannerVisible(false)}
+        onScanSuccess={(product) => {
+          setScannedProduct(product);
+          setMealSelectorVisible(true);
+        }}
+      />
+
+      {/* Sleek Meal Selection Modal */}
+      <Modal
+        visible={mealSelectorVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setMealSelectorVisible(false)}
+      >
+        <View style={[styles.mealSelectOverlay, { backgroundColor: colors.overlay }]}>
+          <View style={[styles.mealSelectContainer, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
+            <View style={[styles.mealSelectHeader, { borderBottomColor: colors.border }]}>
+              <Text style={[styles.mealSelectTitle, { color: colors.textPrimary }]}>Choose Meal Slot</Text>
+              <Text style={[styles.mealSelectSub, { color: colors.textSecondary }]}>
+                Which meal should we add "{scannedProduct?.name}" to?
+              </Text>
+            </View>
+
+            <ScrollView contentContainerStyle={styles.mealSelectScroll}>
+              {settings.meals.filter(m => m.enabled).map((meal) => (
+                <Pressable
+                  key={meal.id}
+                  style={({ pressed }) => [
+                    styles.mealCard,
+                    { borderColor: colors.border, backgroundColor: colors.background },
+                    pressed && styles.cardPressed
+                  ]}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                    setSelectedMeal({ id: meal.id, name: meal.name });
+                    setMealSelectorVisible(false);
+                  }}
+                >
+                  <View style={[styles.mealIconWrapper, { backgroundColor: 'rgba(199, 127, 251, 0.15)' }]}>
+                    <Ionicons name={meal.icon as any} size={20} color="#c77ffb" />
+                  </View>
+                  <Text style={[styles.mealCardLabel, { color: colors.textPrimary }]}>{meal.name}</Text>
+                  <Ionicons name="chevron-forward" size={18} color={colors.textDim} />
+                </Pressable>
+              ))}
+            </ScrollView>
+
+            <Pressable
+              style={({ pressed }) => [
+                styles.cancelMealBtn,
+                { borderColor: colors.border },
+                pressed && { backgroundColor: colors.rowPressed }
+              ]}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setMealSelectorVisible(false);
+                setScannedProduct(null);
+              }}
+            >
+              <Text style={[styles.cancelMealBtnText, { color: colors.textPrimary }]}>Cancel</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
+
+      {/* AddFoodModal to edit and confirm scanned food details */}
+      {scannedProduct && selectedMeal && (
+        <AddFoodModal
+          visible={scannedProduct !== null && selectedMeal !== null}
+          mealName={selectedMeal.name}
+          initialData={scannedProduct}
+          onClose={() => {
+            setScannedProduct(null);
+            setSelectedMeal(null);
+          }}
+          onSave={handleSaveScannedFood}
+        />
+      )}
     </>
   );
 }
@@ -214,6 +344,75 @@ const styles = StyleSheet.create({
   },
   menuLabel: {
     fontSize: 15,
+    fontWeight: '600',
+  },
+  mealSelectOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+  },
+  mealSelectContainer: {
+    borderRadius: 24,
+    borderWidth: 1,
+    padding: 20,
+    width: '100%',
+    maxWidth: 340,
+    maxHeight: '80%',
+  },
+  mealSelectHeader: {
+    alignItems: 'center',
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    marginBottom: 16,
+  },
+  mealSelectTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    marginBottom: 6,
+  },
+  mealSelectSub: {
+    fontSize: 13,
+    textAlign: 'center',
+    lineHeight: 18,
+  },
+  mealSelectScroll: {
+    gap: 10,
+    paddingBottom: 12,
+  },
+  mealCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderRadius: 16,
+    padding: 12,
+  },
+  cardPressed: {
+    opacity: 0.8,
+    transform: [{ scale: 0.98 }],
+  },
+  mealIconWrapper: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  mealCardLabel: {
+    flex: 1,
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  cancelMealBtn: {
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  cancelMealBtnText: {
+    fontSize: 14,
     fontWeight: '600',
   },
 });

@@ -82,7 +82,33 @@ export async function initDatabase(db: SQLite.SQLiteDatabase) {
       carbs REAL NOT NULL,
       fat REAL NOT NULL
     );
+
+    CREATE TABLE IF NOT EXISTS barcode_cache (
+      barcode TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      amount TEXT NOT NULL,
+      calories INTEGER NOT NULL,
+      protein REAL NOT NULL,
+      carbs REAL NOT NULL,
+      fat REAL NOT NULL,
+      serving_grams REAL,
+      calories_per_100g REAL,
+      protein_per_100g REAL,
+      carbs_per_100g REAL,
+      fat_per_100g REAL,
+      cached_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
   `);
+
+  try {
+    await db.execAsync('ALTER TABLE barcode_cache ADD COLUMN serving_grams REAL;');
+    await db.execAsync('ALTER TABLE barcode_cache ADD COLUMN calories_per_100g REAL;');
+    await db.execAsync('ALTER TABLE barcode_cache ADD COLUMN protein_per_100g REAL;');
+    await db.execAsync('ALTER TABLE barcode_cache ADD COLUMN carbs_per_100g REAL;');
+    await db.execAsync('ALTER TABLE barcode_cache ADD COLUMN fat_per_100g REAL;');
+  } catch (e) {
+    // Columns might already exist, ignore
+  }
 
   // Initialize profile with a default row if it doesn't exist
   await db.runAsync(`
