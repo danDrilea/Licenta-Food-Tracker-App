@@ -15,7 +15,6 @@ import * as Haptics from 'expo-haptics';
 const MENU_OPTIONS = [
   { icon: 'camera' as const, label: 'Scan Photo' },
   { icon: 'barcode' as const, label: 'Scan Barcode' },
-  { icon: 'search' as const, label: 'Search Food' },
   { icon: 'scale-outline' as const, label: 'Log Weight' },
 ];
 
@@ -273,6 +272,7 @@ export default function TabLayout() {
           visible={scannedProduct !== null && selectedMeal !== null}
           mealName={selectedMeal.name}
           initialData={scannedProduct}
+          userCountry={settings.country}
           onClose={() => {
             setScannedProduct(null);
             setSelectedMeal(null);

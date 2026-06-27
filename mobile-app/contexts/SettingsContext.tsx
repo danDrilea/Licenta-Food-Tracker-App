@@ -36,6 +36,7 @@ interface SettingsContextType {
   setMealReminders: (enabled: boolean) => void;
   setRpiServerUrl: (url: string) => void;
   setBiometricLock: (enabled: boolean) => void;
+  setCountry: (country: string) => void;
 }
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
@@ -81,6 +82,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
         mealReminders: basicMap.mealReminders === 'true',
         rpiServerUrl: basicMap.rpiServerUrl ?? 'http://danalrpi.local:8000',
         biometricLock: basicMap.biometricLock === 'true',
+        country: basicMap.country ?? 'Romania',
       });
     } catch (e) {
       console.error('Failed to load settings from DB:', e);
@@ -111,6 +113,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
   const setMealReminders = useCallback((enabled: boolean) => updateBasicSetting('mealReminders', String(enabled)), [updateBasicSetting]);
   const setRpiServerUrl = useCallback((url: string) => updateBasicSetting('rpiServerUrl', url), [updateBasicSetting]);
   const setBiometricLock = useCallback((enabled: boolean) => updateBasicSetting('biometricLock', String(enabled)), [updateBasicSetting]);
+  const setCountry = useCallback((country: string) => updateBasicSetting('country', country), [updateBasicSetting]);
 
   const updateDailyGoals = useCallback(async (goals: DailyGoals) => {
     await db.runAsync(
@@ -168,6 +171,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
         setMealReminders,
         setRpiServerUrl,
         setBiometricLock,
+        setCountry,
       }}
     >
       {children}

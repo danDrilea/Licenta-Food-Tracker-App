@@ -32,6 +32,7 @@ export interface AppSettings {
   mealReminders: boolean;
   rpiServerUrl: string;
   biometricLock: boolean;
+  country: string;
 }
 
 export const MAX_MEALS = 8;
@@ -69,6 +70,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   mealReminders: false,
   rpiServerUrl: 'http://danalrpi.local:8000',
   biometricLock: false,
+  country: 'Romania',
 };
 
 // Icon options for custom meals

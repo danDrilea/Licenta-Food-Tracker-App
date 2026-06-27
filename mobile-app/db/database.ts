@@ -139,10 +139,11 @@ export async function initDatabase(db: SQLite.SQLiteDatabase) {
     await db.runAsync("INSERT INTO settings (key, value) VALUES ('heightUnit', 'cm')");
     await db.runAsync("INSERT INTO settings (key, value) VALUES ('energyUnit', 'kcal')");
   }
+  // Unconditionally ensure country exists in settings
+  await db.runAsync("INSERT OR IGNORE INTO settings (key, value) VALUES ('country', 'Romania')");
 
-  // Seed 73 food classes nutrition info if table is empty
-  const foodCount = await db.getFirstAsync<{ count: number }>('SELECT COUNT(*) as count FROM food_classes_nutrition');
-  if (foodCount?.count === 0) {
+  // Seed 73 food classes nutrition info unconditionally to ensure updates apply
+  {
     const entries: [string, number, number, number, number][] = [
       ['candy', 380, 0, 98, 0],
       ['french fries', 312, 3.4, 41, 15],
@@ -222,7 +223,7 @@ export async function initDatabase(db: SQLite.SQLiteDatabase) {
     await db.withTransactionAsync(async () => {
       for (const row of entries) {
         await db.runAsync(
-          'INSERT INTO food_classes_nutrition (name, calories, protein, carbs, fat) VALUES (?, ?, ?, ?, ?)',
+          'INSERT OR REPLACE INTO food_classes_nutrition (name, calories, protein, carbs, fat) VALUES (?, ?, ?, ?, ?)',
           row
         );
       }

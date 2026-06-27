@@ -1,3 +1,4 @@
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Pressable, Switch, TextInput } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import * as Haptics from 'expo-haptics';
@@ -115,6 +116,12 @@ export function SettingsInputRow({
   isLast,
 }: SettingsInputRowProps) {
   const theme = useThemeColors();
+  const [localValue, setLocalValue] = useState(value);
+
+  useEffect(() => {
+    setLocalValue(value);
+  }, [value]);
+
   return (
     <View
       style={[
@@ -142,8 +149,14 @@ export function SettingsInputRow({
           paddingVertical: 8,
           width: '100%',
         }}
-        value={value}
-        onChangeText={onChangeText}
+        value={localValue}
+        onChangeText={setLocalValue}
+        onBlur={() => {
+          if (localValue !== value) onChangeText(localValue);
+        }}
+        onEndEditing={() => {
+          if (localValue !== value) onChangeText(localValue);
+        }}
         placeholder={placeholder}
         placeholderTextColor={theme.textDim}
         autoCapitalize="none"

@@ -17,60 +17,40 @@ export interface BarcodeProduct {
 // Configurable endpoint flag: Set to true to test against Staging, false for Production.
 export const USE_STAGING = false;
 
-// Custom User-Agent as required by Open Food Facts terms of service
-const USER_AGENT = 'LicentaFoodTracker/1.0 (danalex.dri@gmail.com)';
+// Standard mobile Safari User-Agent to bypass Cloudflare WAF blocks/challenges
+const USER_AGENT = 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.5 Mobile/15E148 Safari/604.1';
+
+// Removed Node.js SDK fetch wrapper
 
 /**
- * Fetches product nutrition data from Open Food Facts API.
+ * Fetches product nutrition data from Open Food Facts API using standard fetch.
  */
 export async function fetchFromOpenFoodFacts(barcode: string, useStaging: boolean = USE_STAGING): Promise<BarcodeProduct | null> {
-  const baseUrl = useStaging ? 'https://world.openfoodfacts.net' : 'https://world.openfoodfacts.org';
-  const url = `${baseUrl}/api/v3/product/${barcode}.json`;
-
-  console.log(`[BarcodeService] [API CALL] Requesting OFF API: GET ${url}`);
+  console.log(`[BarcodeService] [API CALL] Requesting OFF API: GET barcode=${barcode}`);
   
-  const headers: HeadersInit = {
-    'User-Agent': USER_AGENT,
-    'Accept': 'application/json',
-  };
-
-  if (useStaging) {
-    // Staging requires Basic Authentication (off:off)
-    // btoa("off:off") is "b2ZmOm9mZg=="
-    headers['Authorization'] = 'Basic b2ZmOm9mZg==';
-    console.log(`[BarcodeService] [API CALL] Including Staging Basic Auth headers`);
-  }
-
   try {
+    const host = useStaging ? 'https://world.openfoodfacts.net' : 'https://world.openfoodfacts.org';
+    const url = `${host}/api/v3/product/${barcode}.json`;
+    
     const response = await fetch(url, {
-      method: 'GET',
-      headers,
+      headers: {
+        'User-Agent': USER_AGENT,
+        'Accept': 'application/json',
+      }
     });
 
-    console.log(`[BarcodeService] [API RESPONSE] HTTP Status: ${response.status} ${response.statusText}`);
-
-    if (response.status === 404) {
-      console.log(`[BarcodeService] [API RESULT] Product ${barcode} not found (404)`);
-      return null;
-    }
-
     if (!response.ok) {
-      console.warn(`[BarcodeService] [API WARNING] Request failed with status ${response.status}`);
+      console.log(`[BarcodeService] [API RESULT] Product ${barcode} not found or HTTP error`);
       return null;
     }
 
     const data = await response.json();
-
-    if (!data || (data.status !== 'success' && data.status !== 1)) {
-      console.log(`[BarcodeService] [API RESULT] Product ${barcode} not found in database (status != success/1)`);
+    if (data.status === 'failure' || !data.product) {
+      console.log(`[BarcodeService] [API RESULT] Product ${barcode} not found in database`);
       return null;
     }
 
     const product = data.product;
-    if (!product) {
-      console.log(`[BarcodeService] [API RESULT] Product field is empty for barcode ${barcode}`);
-      return null;
-    }
 
     // 1. Resolve Product Name (prefer localized Romanian or English)
     const name = 
@@ -138,7 +118,7 @@ export async function fetchFromOpenFoodFacts(barcode: string, useStaging: boolea
     const multiplier = servingWeight / 100;
 
     // 3. Resolve Nutrition Data (per 100g, then multiply by multiplier)
-    const nutriments = product.nutriments || {};
+    const nutriments = (product.nutriments || {}) as Record<string, any>;
     
     // Calories (energy-kcal_100g or energy-kcal or calculate from energy_100g in kJ)
     let calories100g = 0;
@@ -174,10 +154,10 @@ export async function fetchFromOpenFoodFacts(barcode: string, useStaging: boolea
       fatPer100g: parseFloat(fat100g.toFixed(1)),
     };
 
-    console.log(`[BarcodeService] [API PARSE SUCCESS] Barcode: ${barcode} (Serving Weight: ${servingWeight}g, Multiplier: ${multiplier}) ->`, JSON.stringify(result));
+    console.log(`[BarcodeService] [SDK API PARSE SUCCESS] Barcode: ${barcode} ->`, JSON.stringify(result));
     return result;
   } catch (error) {
-    console.error(`[BarcodeService] [API ERROR] Failed to fetch barcode ${barcode}:`, error);
+    console.error(`[BarcodeService] [SDK API ERROR] Failed to fetch barcode ${barcode}:`, error);
     return null;
   }
 }
@@ -200,13 +180,10 @@ export async function getCachedProduct(db: SQLite.SQLiteDatabase, barcode: strin
       protein_per_100g: number | null;
       carbs_per_100g: number | null;
       fat_per_100g: number | null;
-    }>(
-      'SELECT name, amount, calories, protein, carbs, fat, serving_grams, calories_per_100g, protein_per_100g, carbs_per_100g, fat_per_100g FROM barcode_cache WHERE barcode = ?',
-      [barcode]
-    );
+    }>('SELECT * FROM barcode_cache WHERE barcode = ?', [barcode]);
 
     if (row) {
-      console.log(`[BarcodeService] [CACHE HIT] Found product inside local SQLite for barcode "${barcode}": "${row.name}"`);
+      console.log(`[BarcodeService] [CACHE HIT] Found cached product details for barcode "${barcode}":`, JSON.stringify(row));
       return {
         name: row.name,
         amount: row.amount,
@@ -284,131 +261,4 @@ export async function lookupBarcode(
 
   console.log(`--- [BarcodeService] [END LOOKUP - FAILED] Product not found anywhere ---`);
   return null;
-}
-
-/**
- * Searches Open Food Facts API for products matching a query.
- * Respects rate-limits by only being called explicitly on search button click.
- */
-export async function searchOpenFoodFacts(
-  query: string, 
-  useStaging: boolean = USE_STAGING
-): Promise<BarcodeProduct[]> {
-  const cleanQuery = query.trim();
-  if (!cleanQuery) return [];
-
-  const executeQuery = async (staging: boolean): Promise<BarcodeProduct[] | null> => {
-    const baseUrl = staging ? 'https://world.openfoodfacts.net' : 'https://world.openfoodfacts.org';
-    // Use the v2 API search endpoint which is more robust than the website CGI search
-    const url = `${baseUrl}/api/v2/search?search_terms=${encodeURIComponent(cleanQuery)}&json=true&page_size=20`;
-
-    console.log(`[BarcodeService] [API SEARCH] Querying: GET ${url}`);
-    
-    const headers: HeadersInit = {
-      'User-Agent': USER_AGENT,
-      'Accept': 'application/json',
-    };
-
-    if (staging) {
-      headers['Authorization'] = 'Basic b2ZmOm9mZg==';
-    }
-
-    try {
-      const response = await fetch(url, {
-        method: 'GET',
-        headers,
-      });
-
-      console.log(`[BarcodeService] [API SEARCH] Response HTTP Status: ${response.status}`);
-
-      if (response.status === 503 && !staging) {
-        console.warn(`[BarcodeService] [API SEARCH] Production returned 503. Triggering fallback to Staging.`);
-        return null; // Signals fallback to caller
-      }
-
-      if (!response.ok) {
-        console.warn(`[BarcodeService] [API SEARCH] Search request failed with status ${response.status}`);
-        return [];
-      }
-
-      const data = await response.json();
-      console.log(`[BarcodeService] [API SEARCH] Found ${data.count || 0} products for query "${cleanQuery}"`);
-
-      if (!data.products || data.products.length === 0) {
-        return [];
-      }
-
-      // Map matching products
-      return data.products.map((product: any) => {
-        const name = 
-          product.product_name_ro || 
-          product.product_name_en || 
-          product.product_name || 
-          product.generic_name || 
-          'Unknown Product';
-
-        const brand = product.brands ? `${product.brands}` : '';
-        const fullName = brand ? `${brand} - ${name}` : name;
-
-        // Determine serving weight / serving size
-        let servingWeight = 100;
-        let amount = product.serving_size || product.quantity || '100 g';
-
-        if (product.serving_quantity !== undefined && !isNaN(Number(product.serving_quantity))) {
-          servingWeight = Number(product.serving_quantity);
-        }
-
-        const nutriments = product.nutriments || {};
-        
-        let calories100g = 0;
-        if (nutriments['energy-kcal_100g'] !== undefined) {
-          calories100g = Number(nutriments['energy-kcal_100g']);
-        } else if (nutriments['energy-kcal'] !== undefined) {
-          calories100g = Number(nutriments['energy-kcal']);
-        } else if (nutriments['energy_100g'] !== undefined) {
-          calories100g = Number(nutriments['energy_100g']) * 0.239006;
-        }
-
-        const protein100g = Number(nutriments.proteins_100g || 0);
-        const carbs100g = Number(nutriments.carbohydrates_100g || 0);
-        const fat100g = Number(nutriments.fat_100g || 0);
-
-        // We scale the calories/macros by the servingWeight if it's not 100g, so it maps to the default amount
-        const multiplier = servingWeight / 100;
-
-        let finalAmount = amount;
-        if (servingWeight !== 100 && !amount.toLowerCase().includes('g') && !amount.toLowerCase().includes('ml')) {
-          finalAmount = `${amount} (${Math.round(servingWeight)} g)`;
-        }
-
-        return {
-          name: fullName,
-          amount: finalAmount,
-          calories: Math.round(calories100g * multiplier),
-          protein: parseFloat((protein100g * multiplier).toFixed(1)),
-          carbs: parseFloat((carbs100g * multiplier).toFixed(1)),
-          fat: parseFloat((fat100g * multiplier).toFixed(1)),
-          servingGrams: servingWeight,
-          caloriesPer100g: Math.round(calories100g),
-          proteinPer100g: parseFloat(protein100g.toFixed(1)),
-          carbsPer100g: parseFloat(carbs100g.toFixed(1)),
-          fatPer100g: parseFloat(fat100g.toFixed(1)),
-        };
-      });
-    } catch (error) {
-      console.error(`[BarcodeService] [API SEARCH ERROR] Execute failed for staging=${staging}:`, error);
-      return staging ? [] : null; // If production fails, return null to trigger staging fallback
-    }
-  };
-
-  // First try the configured environment (default is production)
-  let results = await executeQuery(useStaging);
-  
-  // If we queried production and got a 503 or error, retry on staging as fallback!
-  if (results === null && !useStaging) {
-    console.log(`[BarcodeService] [API SEARCH] Retrying query on Staging Server...`);
-    results = await executeQuery(true);
-  }
-
-  return results || [];
 }

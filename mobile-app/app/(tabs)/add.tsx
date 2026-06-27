@@ -7,7 +7,7 @@ export default function AddScreen() {
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       <Text style={[styles.title, { color: theme.textPrimary }]}>Add Food</Text>
-      <Text style={[styles.text, { color: theme.textDim }]}>Scan from photo, scan barcode, search aliment</Text>
+      <Text style={[styles.text, { color: theme.textDim }]}>Scan from photo, scan barcode</Text>
     </View>
   );
 }

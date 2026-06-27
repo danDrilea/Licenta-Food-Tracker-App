@@ -194,7 +194,7 @@ export default function ScanPhotoFlowModal({ visible, onClose }: ScanPhotoFlowMo
         fat: number;
       }[] = [];
       for (const item of detectedItems) {
-        const normalizedKey = item.name.toLowerCase().trim().replace(/ /g, '_');
+        const normalizedKey = item.name.toLowerCase().trim().replace(/_/g, ' ');
         const nutrientsRow = await db.getFirstAsync<{ calories: number, protein: number, carbs: number, fat: number }>(
           'SELECT calories, protein, carbs, fat FROM food_classes_nutrition WHERE name = ?',
           [normalizedKey]

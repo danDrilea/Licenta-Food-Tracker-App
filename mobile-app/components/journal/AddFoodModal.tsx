@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useThemeColors } from '../../types/theme';
 import BarcodeScannerModal from './BarcodeScannerModal';
-import { BarcodeProduct, searchOpenFoodFacts } from '../../db/barcodeService';
+import { BarcodeProduct } from '../../db/barcodeService';
 
 interface FoodData {
   name: string;
@@ -23,9 +23,10 @@ interface AddFoodModalProps {
   onSave: (food: FoodData) => void;
   onDelete?: (id: string) => void;
   onLaunchPhotoScanner?: () => void;
+  userCountry?: string;
 }
 
-export default function AddFoodModal({ visible, mealName, initialData, onClose, onSave, onDelete, onLaunchPhotoScanner }: AddFoodModalProps) {
+export default function AddFoodModal({ visible, mealName, initialData, onClose, onSave, onDelete, onLaunchPhotoScanner, userCountry }: AddFoodModalProps) {
   const [name, setName] = useState('');
   const [grams, setGrams] = useState('');
   const [calories, setCalories] = useState('');
@@ -35,12 +36,7 @@ export default function AddFoodModal({ visible, mealName, initialData, onClose, 
   const [scannerVisible, setScannerVisible] = useState(false);
   
   // Choice HUB States
-  const [viewState, setViewState] = useState<'HUB' | 'MANUAL' | 'SEARCH'>('HUB');
-  
-  // OFF Search States
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<BarcodeProduct[]>([]);
-  const [searching, setSearching] = useState(false);
+  const [viewState, setViewState] = useState<'HUB' | 'MANUAL'>('HUB');
 
   const theme = useThemeColors();
 
@@ -130,32 +126,11 @@ export default function AddFoodModal({ visible, mealName, initialData, onClose, 
         setProtein('');
         setCarbs('');
         setFat('');
-        setSearchQuery('');
-        setSearchResults([]);
-        setSearching(false);
         baseNutrientsRef.current = null;
         setViewState('HUB'); // Show the choice hub when adding fresh food
       }
     }
   }, [visible, initialData]);
-
-  const handleSearchSubmit = async () => {
-    if (!searchQuery.trim()) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    setSearching(true);
-    try {
-      const results = await searchOpenFoodFacts(searchQuery);
-      setSearchResults(results);
-      if (results.length === 0) {
-        Alert.alert('No Results', 'No matching products found in the database.');
-      }
-    } catch (error) {
-      console.error('[AddFoodModal] API search error:', error);
-      Alert.alert('Search Failed', 'Could not query the Open Food Facts database. Please check your connection.');
-    } finally {
-      setSearching(false);
-    }
-  };
 
   const handleSave = () => {
     if (!name.trim() || !calories.trim()) return;
@@ -223,13 +198,11 @@ export default function AddFoodModal({ visible, mealName, initialData, onClose, 
               <Text style={[styles.title, { color: theme.textPrimary }]}>
                 {viewState === 'HUB' 
                   ? `Add to ${mealName}` 
-                  : viewState === 'SEARCH' 
-                    ? 'Search Database' 
-                    : isEditing 
-                      ? `Edit in ${mealName}` 
-                      : baseNutrientsRef.current 
-                        ? 'Adjust Portion'
-                        : 'Manual Input'
+                  : isEditing 
+                    ? `Edit in ${mealName}` 
+                    : baseNutrientsRef.current 
+                      ? 'Adjust Portion'
+                      : 'Manual Input'
                 }
               </Text>
             </View>
@@ -290,21 +263,6 @@ export default function AddFoodModal({ visible, mealName, initialData, onClose, 
                   </View>
                   <Text style={[styles.hubCardTitle, { color: theme.textPrimary }]}>AI Photo Scan</Text>
                   <Text style={[styles.hubCardDesc, { color: theme.textDim }]}>Estimate volume & mass by photo</Text>
-                </TouchableOpacity>
-
-                {/* 4. Search Database */}
-                <TouchableOpacity
-                  style={[styles.hubCard, { backgroundColor: theme.inputBg, borderColor: theme.border }]}
-                  onPress={() => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    setViewState('SEARCH');
-                  }}
-                >
-                  <View style={[styles.hubIconCircle, { backgroundColor: 'rgba(16, 185, 129, 0.15)' }]}>
-                    <Ionicons name="search-outline" size={22} color="#10b981" />
-                  </View>
-                  <Text style={[styles.hubCardTitle, { color: theme.textPrimary }]}>Search OFF</Text>
-                  <Text style={[styles.hubCardDesc, { color: theme.textDim }]}>Search global food database</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -423,95 +381,6 @@ export default function AddFoodModal({ visible, mealName, initialData, onClose, 
                 </TouchableOpacity>
               </View>
             </ScrollView>
-          )}
-
-          {/* SEARCH DATABASE TAB */}
-          {viewState === 'SEARCH' && (
-            <View style={styles.searchContainer}>
-              <View style={styles.searchBar}>
-                <TextInput
-                  style={[styles.searchInput, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.textPrimary }]}
-                  placeholder="Search brand or product (e.g. Oreo)"
-                  placeholderTextColor={theme.textDim}
-                  value={searchQuery}
-                  onChangeText={setSearchQuery}
-                  onSubmitEditing={handleSearchSubmit}
-                  returnKeyType="search"
-                  autoFocus
-                />
-                <TouchableOpacity 
-                  style={[styles.searchBtn, { backgroundColor: '#8b5cf6' }]}
-                  onPress={handleSearchSubmit}
-                  disabled={searching}
-                >
-                  {searching ? (
-                    <ActivityIndicator size="small" color="#fff" />
-                  ) : (
-                    <Ionicons name="search" size={20} color="#fff" />
-                  )}
-                </TouchableOpacity>
-              </View>
-
-              {searching ? (
-                <View style={styles.searchingCenter}>
-                  <ActivityIndicator size="large" color="#8b5cf6" />
-                  <Text style={{ color: theme.textSecondary, marginTop: 12, fontWeight: '500' }}>
-                    Searching Open Food Facts...
-                  </Text>
-                </View>
-              ) : searchResults.length > 0 ? (
-                <ScrollView 
-                  style={styles.resultsScroll} 
-                  contentContainerStyle={styles.resultsContent}
-                  showsVerticalScrollIndicator={false}
-                >
-                  {searchResults.map((prod, idx) => (
-                    <TouchableOpacity
-                      key={idx}
-                      style={[styles.resultCard, { backgroundColor: theme.inputBg, borderColor: theme.border }]}
-                      onPress={() => {
-                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                        setName(prod.name);
-                        setCalories(prod.calories.toString());
-                        setProtein(prod.protein.toString());
-                        setCarbs(prod.carbs.toString());
-                        setFat(prod.fat.toString());
-
-                        const baseGrams = prod.servingGrams || 100;
-                        setGrams(baseGrams.toString());
-
-                        // Set base nutrients for scaling
-                        baseNutrientsRef.current = {
-                          caloriesPer100g: prod.caloriesPer100g || prod.calories / (baseGrams / 100),
-                          proteinPer100g: prod.proteinPer100g || prod.protein / (baseGrams / 100),
-                          carbsPer100g: prod.carbsPer100g || prod.carbs / (baseGrams / 100),
-                          fatPer100g: prod.fatPer100g || prod.fat / (baseGrams / 100),
-                          baseGrams: baseGrams,
-                          originalAmountString: prod.amount
-                        };
-
-                        setViewState('MANUAL');
-                      }}
-                    >
-                      <View style={styles.resultInfo}>
-                        <Text style={[styles.resultName, { color: theme.textPrimary }]} numberOfLines={2}>{prod.name}</Text>
-                        <Text style={[styles.resultMeta, { color: theme.textDim }]} numberOfLines={1}>
-                          Portion: {prod.amount} • {prod.calories} kcal
-                        </Text>
-                      </View>
-                      <Ionicons name="chevron-forward" size={18} color={theme.textDim} style={styles.chevron} />
-                    </TouchableOpacity>
-                  ))}
-                </ScrollView>
-              ) : (
-                <View style={styles.searchingCenter}>
-                  <Ionicons name="search-outline" size={48} color={theme.textMuted} />
-                  <Text style={{ color: theme.textDim, marginTop: 12, textAlign: 'center', fontSize: 13, lineHeight: 18 }}>
-                    Enter a product name above and tap Search.{"\n"}Only queries on button press to protect rate limits.
-                  </Text>
-                </View>
-              )}
-            </View>
           )}
         </View>
       </KeyboardAvoidingView>
@@ -689,75 +558,6 @@ const styles = StyleSheet.create({
     fontSize: 10,
     textAlign: 'center',
     lineHeight: 13,
-  },
-
-  // Search API View
-  searchContainer: {
-    gap: 14,
-    paddingBottom: 16,
-    height: 400,
-  },
-  searchBar: {
-    flexDirection: 'row',
-    gap: 8,
-    alignItems: 'center',
-  },
-  searchInput: {
-    flex: 1,
-    borderRadius: 12,
-    borderWidth: 1,
-    paddingHorizontal: 16,
-    height: 48,
-    fontSize: 15,
-  },
-  searchBtn: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#8b5cf6',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  searchingCenter: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 40,
-  },
-  resultsScroll: {
-    flex: 1,
-  },
-  resultsContent: {
-    gap: 10,
-    paddingBottom: 10,
-  },
-  resultCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 12,
-    borderWidth: 1,
-  },
-  resultInfo: {
-    flex: 1,
-    gap: 4,
-    paddingRight: 12,
-  },
-  resultName: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  resultMeta: {
-    fontSize: 12,
-  },
-  chevron: {
-    opacity: 0.7,
   },
   stepperBtn: {
     width: 44,

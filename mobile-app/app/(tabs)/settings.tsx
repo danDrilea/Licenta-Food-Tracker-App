@@ -1,6 +1,8 @@
-import React from 'react';
-import { StyleSheet, View, Text } from 'react-native';
+import React, { useState, useMemo } from 'react';
+import { StyleSheet, View, Text, Modal, TextInput, FlatList, Pressable } from 'react-native';
 import { NestableScrollContainer } from 'react-native-draggable-flatlist';
+import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import { useSettings } from '../../contexts/SettingsContext';
 import { SettingsGroup, SettingsRow, SettingsToggleRow, SettingsInputRow } from '../../components/settings/SettingsRow';
 import MealEditor from '../../components/settings/MealEditor';
@@ -28,122 +30,124 @@ export default function SettingsScreen() {
   const colors = useThemeColors();
 
   return (
-    <NestableScrollContainer
-      style={[styles.scrollView, { backgroundColor: colors.background }]}
-      contentContainerStyle={styles.content}
-      showsVerticalScrollIndicator={false}
-      keyboardShouldPersistTaps="handled"
-      keyboardDismissMode="interactive"
-    >
-      {/* ─── Appearance ─── */}
-      <SettingsGroup title="Appearance">
-        <SettingsToggleRow
-          icon="moon-outline"
-          iconColor="#facc15"
-          label="Dark Mode"
-          value={settings.theme === 'dark'}
-          onToggle={toggleTheme}
-          isLast
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
+      <NestableScrollContainer
+        style={[styles.scrollView, { backgroundColor: colors.background }]}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="interactive"
+      >
+        {/* ─── Appearance ─── */}
+        <SettingsGroup title="Appearance">
+          <SettingsToggleRow
+            icon="moon-outline"
+            iconColor="#facc15"
+            label="Dark Mode"
+            value={settings.theme === 'dark'}
+            onToggle={toggleTheme}
+            isLast
+          />
+        </SettingsGroup>
+
+        {/* ─── Meals ─── */}
+        <MealEditor
+          meals={settings.meals}
+          onUpdateMeals={updateMeals}
+          onAddMeal={addMeal}
+          onRemoveMeal={removeMeal}
+          onRenameMeal={renameMeal}
         />
-      </SettingsGroup>
 
-      {/* ─── Meals ─── */}
-      <MealEditor
-        meals={settings.meals}
-        onUpdateMeals={updateMeals}
-        onAddMeal={addMeal}
-        onRemoveMeal={removeMeal}
-        onRenameMeal={renameMeal}
-      />
-
-      {/* ─── Daily Goals ─── */}
-      <DailyGoalsEditor
-        goals={settings.dailyGoals}
-        onSave={updateDailyGoals}
-      />
-
-      {/* ─── Units ─── */}
-      <UnitSelector
-        weightUnit={settings.weightUnit}
-        heightUnit={settings.heightUnit}
-        energyUnit={settings.energyUnit}
-        onWeightChange={setWeightUnit}
-        onHeightChange={setHeightUnit}
-        onEnergyChange={setEnergyUnit}
-      />
-
-      {/* ─── Server Settings ─── */}
-      <SettingsGroup title="Server Connection">
-        <SettingsInputRow
-          icon="server-outline"
-          iconColor="#c77ffb"
-          label="Raspberry Pi URL"
-          value={settings.rpiServerUrl}
-          onChangeText={setRpiServerUrl}
-          placeholder="http://192.168.1.X:8000"
-          isLast
+        {/* ─── Daily Goals ─── */}
+        <DailyGoalsEditor
+          goals={settings.dailyGoals}
+          onSave={updateDailyGoals}
         />
-      </SettingsGroup>
 
-      {/* ─── Notifications ─── */}
-      <SettingsGroup title="Notifications">
-        <SettingsToggleRow
-          icon="notifications-outline"
-          iconColor="#38bdf8"
-          label="Enable Notifications"
-          value={settings.notificationsEnabled}
-          onToggle={setNotificationsEnabled}
+        {/* ─── Units ─── */}
+        <UnitSelector
+          weightUnit={settings.weightUnit}
+          heightUnit={settings.heightUnit}
+          energyUnit={settings.energyUnit}
+          onWeightChange={setWeightUnit}
+          onHeightChange={setHeightUnit}
+          onEnergyChange={setEnergyUnit}
         />
-        <SettingsToggleRow
-          icon="alarm-outline"
-          iconColor="#f59e0b"
-          label="Meal Reminders"
-          value={settings.mealReminders}
-          onToggle={setMealReminders}
-          isLast
-        />
-      </SettingsGroup>
 
-      {/* ─── Privacy & Security ─── */}
-      <SettingsGroup title="Privacy & Security">
-        <SettingsToggleRow
-          icon="finger-print-outline"
-          iconColor="#c77ffb"
-          label="Biometric Lock"
-          value={settings.biometricLock}
-          onToggle={setBiometricLock}
-          isLast
-        />
-      </SettingsGroup>
+        {/* ─── Server Settings ─── */}
+        <SettingsGroup title="Server Connection">
+          <SettingsInputRow
+            icon="server-outline"
+            iconColor="#c77ffb"
+            label="Raspberry Pi URL"
+            value={settings.rpiServerUrl}
+            onChangeText={setRpiServerUrl}
+            placeholder="http://192.168.1.X:8000"
+            isLast
+          />
+        </SettingsGroup>
 
-      {/* ─── About ─── */}
-      <SettingsGroup title="About">
-        <SettingsRow
-          icon="information-circle-outline"
-          label="Version"
-          value="1.0.0"
-        />
-        <SettingsRow
-          icon="document-text-outline"
-          label="Terms of Service"
-          onPress={() => console.log('Open ToS')}
-        />
-        <SettingsRow
-          icon="shield-checkmark-outline"
-          label="Privacy Policy"
-          onPress={() => console.log('Open Privacy Policy')}
-          isLast
-        />
-      </SettingsGroup>
+        {/* ─── Notifications ─── */}
+        <SettingsGroup title="Notifications">
+          <SettingsToggleRow
+            icon="notifications-outline"
+            iconColor="#38bdf8"
+            label="Enable Notifications"
+            value={settings.notificationsEnabled}
+            onToggle={setNotificationsEnabled}
+          />
+          <SettingsToggleRow
+            icon="alarm-outline"
+            iconColor="#f59e0b"
+            label="Meal Reminders"
+            value={settings.mealReminders}
+            onToggle={setMealReminders}
+            isLast
+          />
+        </SettingsGroup>
 
-      {/* Footer */}
-      <View style={styles.footer}>
-        <Text style={[styles.footerText, { color: colors.textDimmer }]}>Food Tracker</Text>
-        <Text style={[styles.footerSub, { color: colors.textDimmer }]}>Made with 💜</Text>
-      </View>
+        {/* ─── Privacy & Security ─── */}
+        <SettingsGroup title="Privacy & Security">
+          <SettingsToggleRow
+            icon="finger-print-outline"
+            iconColor="#c77ffb"
+            label="Biometric Lock"
+            value={settings.biometricLock}
+            onToggle={setBiometricLock}
+            isLast
+          />
+        </SettingsGroup>
 
-      <View style={styles.bottomSpacer} />
-    </NestableScrollContainer>
+        {/* ─── About ─── */}
+        <SettingsGroup title="About">
+          <SettingsRow
+            icon="information-circle-outline"
+            label="Version"
+            value="1.0.0"
+          />
+          <SettingsRow
+            icon="document-text-outline"
+            label="Terms of Service"
+            onPress={() => console.log('Open ToS')}
+          />
+          <SettingsRow
+            icon="shield-checkmark-outline"
+            label="Privacy Policy"
+            onPress={() => console.log('Open Privacy Policy')}
+            isLast
+          />
+        </SettingsGroup>
+
+        {/* Footer */}
+        <View style={styles.footer}>
+          <Text style={[styles.footerText, { color: colors.textDimmer }]}>Food Tracker</Text>
+          <Text style={[styles.footerSub, { color: colors.textDimmer }]}>Made with 💜</Text>
+        </View>
+
+        <View style={styles.bottomSpacer} />
+      </NestableScrollContainer>
+    </View>
   );
 }
 

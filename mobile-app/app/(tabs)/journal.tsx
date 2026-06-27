@@ -282,6 +282,7 @@ export default function JournalScreen() {
         }}
         onDelete={(id) => deleteFoodLog(id)}
         onLaunchPhotoScanner={() => setPhotoScannerVisible(true)}
+        userCountry={settings.country}
         onSave={(food) => {
           if (addingFoodToMeal) {
             if (editingFoodItem) {
